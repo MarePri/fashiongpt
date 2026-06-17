@@ -1,104 +1,89 @@
-# FashionGPT - Project Context
+# FashionGPT — Project Context
 
 ## Environment
-- **Language**: JavaScript (React JSX)
-- **Runtime**: Node.js (Vite dev server running on localhost:5173)
-- **Build**: `npm run build` → `vite build`
-- **Dev**: `npm run dev` → `vite`
-- **Package Manager**: npm
-- **Dependencies**: react ^18.3.1, react-dom ^18.3.1
-- **Dev Dependencies**: @vitejs/plugin-react ^4.3.1, vite ^5.4.1
+- Runtime: Vite 5 + React 19 (Browser SPA), **TypeScript added**
+- Language: JavaScript (JSX) + **TypeScript (.ts) under src/agents/**
+- Build: `npm run build` → vite build (supports both .js and .ts)
+- Dev: `npm run dev` → vite dev
 
 ## Project Type
-- Application (SPA — Vite + React, single-page with 5 tabs)
+- [x] Application (Web SPA) — AI fashion stylist
+- Offline-first: full fallback mode without API key
+- **New: Agent Layer** — typed, orchestrator-coordinated agent system
 
-## Architecture (After Phase 0 Migration)
+## Architecture (Current)
 ```
 src/
-├── index.css              ← Extracted CSS (167 lines)
-├── main.jsx               ← React mount + CSS import
-├── App.jsx                ← Slim orchestrator (~140 lines)
-├── types/
-│   └── index.js           ← JSDoc typedefs for all data shapes
-├── data/
-│   ├── brands.js          ← BRANDS array
-│   ├── products.js        ← 36 products (was inline in App.jsx)
-│   ├── occasions.js       ← 8 occasions
-│   ├── trends.js          ← 8 trends
-│   ├── archetypes.js      ← 4 archetypes
-│   └── prompts.js         ← 8 prompt suggestions
-├── utils/
-│   ├── color.js           ← COLOR_HEX map
-│   ├── budget.js          ← extractBudget() parser
-│   └── outfit.js          ← parseOutfitFromProducts() + generateOfflineOutfit()
-├── services/
-│   ├── config.js          ← hasApiKey(), isOfflineMode()
-│   ├── ai.mock.js         ← generateOfflineChatResponse() + generateOfflineDNA()
-│   └── ai.js              ← callAI() + getFashionDNA() with offline fallback
-├── components/
-│   ├── ColorDot.jsx       ← Color dot display
-│   ├── OutfitCard.jsx     ← Outfit card with scores & total
-│   └── Navbar.jsx         ← Tab navigation bar
-├── pages/
-│   ├── ChatPage.jsx       ← Chat tab (messages, input, prompts)
-│   ├── StylePage.jsx      ← Occasion Builder tab
-│   ├── TrendsPage.jsx     ← Trend Radar tab
-│   ├── DnaPage.jsx        ← FashionDNA tab
-│   └── CapsulePage.jsx    ← Capsule Wardrobe tab
-└── hooks/                 ← (empty, for future use)
+├── App.jsx               # Slim orchestrator (UI)
+├── main.jsx / index.css  # Entry point + styles
+├── components/           # 10 presentational components
+├── hooks/                # 4 business-logic hooks
+├── data/                 # 7 static data files
+├── services/             # AI service with retry + offline fallback
+├── utils/                # Color harmony, budget, outfit scoring
+├── types/index.js        # JSDoc type definitions
+└── agents/               # NEW — TypeScript agent layer
+    ├── types.ts          # All interfaces, inputs/outputs, types
+    ├── logger.ts         # Structured logging utility
+    ├── profile.agent.ts  # Style profile analysis
+    ├── wardrobe.agent.ts # Product curation/selection
+    ├── outfit.agent.ts   # Outfit composition + scoring
+    ├── critic.agent.ts   # Outfit critique/review
+    └── orchestrator.ts   # Central coordinator (agents never call each other)
 ```
 
-## What's Been Done (Phase 0 Complete ✅)
+## Agent Architecture
 
-### Restructuring (no behavior change)
-1. Extracted CSS from template string → `src/index.css`
-2. Extracted static data (PRODUCTS, OCCASIONS, TRENDS, ARCHETYPES, PROMPTS, BRANDS) → `src/data/*.js`
-3. Extracted utility functions (COLOR_HEX, extractBudget, parseOutfitFromProducts) → `src/utils/*.js`
-4. Extracted AI integration (callAI, getFashionDNA) with offline fallback → `src/services/*.js`
-5. Extracted components (Navbar, OutfitCard, ColorDot) → `src/components/*.jsx`
-6. Extracted page render code → `src/pages/*.jsx`
-7. Created type definitions (JSDoc) in `src/types/index.js`
+### Rules Enforced
+| Rule | Enforcement |
+|------|------------|
+| No agent-to-agent calls | Only orchestrator imports agents |
+| Typed I/O | Every agent has strict input/output interfaces in types.ts |
+| Never throw | Every agent captures errors, returns fallback |
+| Logging | All agents use `logger.ts` with timestamps and levels |
+| No UI coupling | Agents are pure infrastructure — can be tested standalone |
 
-### New Functionality Added
-8. `extractBudget()` — parses "€100", "100 euro", "under 150", "budget 200" from text
-9. `parseOutfitFromProducts()` rewritten — sorts by price, selects within budget if constraint found
-10. `generateOfflineOutfit()` — works without any API key
-11. `generateOfflineChatResponse()` — template-based mock AI for all common queries
-12. `generateOfflineDNA()` — mock DNA analysis for each archetype
-13. `callAI()` now auto-falls back to offline mode when no API key is detected
-14. `getFashionDNA()` with offline fallback
+### Orchestrator Flows
+| Request Type | Agent Pipeline |
+|-------------|---------------|
+| `analyze_profile` | ProfileAgent (single) |
+| `critique_outfit` | CriticAgent (single) |
+| `build_outfit` | ProfileAgent → WardrobeAgent → OutfitAgent → CriticAgent (4 steps) |
+| `build_capsule` | ProfileAgent → WardrobeAgent (2 steps) |
 
-### Behavioral Changes
-- **Budget accuracy**: Outfit generation now respects price constraints from user messages
-- **Offline mode**: App works fully without any API key
-- **No visual changes**: All 5 tabs, styling, interactions preserved exactly
+### Key interfaces (types.ts)
+- `OrchestratorRequest` / `OrchestratorResponse` — typed request/response
+- `AgentTrace` — execution trace per agent (duration, warnings, success)
+- `ProfileAgentInput/Output` — style profile analysis
+- `WardrobeAgentInput/Output` — product curation
+- `OutfitAgentInput/Output` — outfit composition
+- `CriticAgentInput/Output` — critique with 6 scoring dimensions
 
-## API Key Situation
-- **No API keys set**. App runs in offline mode by default (fully functional).
-- `.env.local` has all keys commented out.
+## What's Been Done (This Session)
+1. ✅ Added TypeScript support (typescript, tsconfig.json)
+2. ✅ Created `src/agents/types.ts` — all interfaces
+3. ✅ Created `src/agents/logger.ts` — structured logging
+4. ✅ Created `profile.agent.ts` — archetype→profile mapping with brand affinities
+5. ✅ Created `wardrobe.agent.ts` — occasion/ budget/ style-based product selection
+6. ✅ Created `outfit.agent.ts` — outfit composition with 4 scoring dimensions
+7. ✅ Created `critic.agent.ts` — 6-dimension critique with approval/verdict
+8. ✅ Created `orchestrator.ts` — central coordinator with 4 request types
+9. ❌ **Pending: Build verification** — need to compile TypeScript and check zero errors
 
-## Active Node Processes
-- (none currently — killed for memory compaction)
+## Key Decisions
+1. TypeScript only for agent layer — existing JS stays as-is (gradual adoption)
+2. Agents are **async functions**, not classes — simpler composition for orchestrator
+3. Product pool seeded into ProfileAgent lazily (avoids circular deps)
+4. Critic scores on 6 dimensions: occasionFit, budgetCompliance, styleCoherence, colorHarmony, trendAlignment, overall
+5. Orchestrator returns full execution trace for observability
+6. All errors caught at agent level → fallback return (never throws to caller)
+7. Logger uses `console.error/warn/log/debug` with ISO timestamps — no external deps
 
-## Current Phase: Phase 1 — Service Layer Enhancement (in progress)
-### T1.1: Enhance AI service (files to modify)
-- `src/services/ai.js` — add retry logic (2 retries, exponential backoff), add response validation for AI JSON
-- `src/services/ai.mock.js` — add token usage tracking object to mock responses
-- `src/services/config.js` — add retry config constants
+## Pending
+- **Build verification** — run `npx tsc --noEmit` then `vite build` to confirm zero TypeScript + JS errors
+- Build already has JS part verified (57 modules, 0 errors) — just need to add TS compilation
 
-### T1.2: Enhance outfit service (files to modify)
-- `src/utils/outfit.js` — replace random scores with computed style scoring algorithm; add color harmony validation
-- `src/data/products.js` — (reference only, no changes needed)
-
-### T1.3: Add occasion-category mapping (new file)
-- `src/data/occasionMap.js` — explicit map of occasion → required categories
-
-## Build Verification
-- Phase 0 build: ✅ 50 modules, 1.62s, 0 errors
-- Phase 1 build: pending
-
-## Next Phases After Phase 1
-- Phase 2: Agent layer & Orchestrator (outfit.agent, profile.agent, wardrobe.agent, critic.agent)
-- Phase 3: TypeScript migration (convert .jsx → .tsx)
-- Phase 4: Backend proxy for API security
-- Phase 5: Polish (error boundaries, React.memo, unique keys)
+## Build Status
+- Before agents: 57 modules, 1.61s, 0 errors
+- After agents: Need to verify TypeScript compilation
+- Expected to pass — all JS code unchanged, TS code has JSDoc imports from existing data
