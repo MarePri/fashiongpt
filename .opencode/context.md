@@ -1,89 +1,88 @@
 # FashionGPT — Project Context
 
 ## Environment
-- Runtime: Vite 5 + React 19 (Browser SPA), **TypeScript added**
-- Language: JavaScript (JSX) + **TypeScript (.ts) under src/agents/**
-- Build: `npm run build` → vite build (supports both .js and .ts)
+- Runtime: Vite 5 + React 18 (Browser SPA), **TypeScript + JavaScript**
+- Languages: JS (components, hooks, data, utils, services) + **TS (agents/, db/)**
+- Build: `npm run build` → vite build (JS + TS via esbuild)
 - Dev: `npm run dev` → vite dev
+- Dependencies: react, react-dom, @supabase/supabase-js
+- DevDeps: typescript ^6.0, vite ^5.4, @vitejs/plugin-react, @types/node
 
 ## Project Type
-- [x] Application (Web SPA) — AI fashion stylist
-- Offline-first: full fallback mode without API key
-- **New: Agent Layer** — typed, orchestrator-coordinated agent system
+- AI fashion stylist SPA — offline-first (no API key required)
+- Three-layer architecture: UI → Agents → Database
 
-## Architecture (Current)
+## Architecture (Full State)
 ```
 src/
-├── App.jsx               # Slim orchestrator (UI)
-├── main.jsx / index.css  # Entry point + styles
-├── components/           # 10 presentational components
-├── hooks/                # 4 business-logic hooks
-├── data/                 # 7 static data files
-├── services/             # AI service with retry + offline fallback
-├── utils/                # Color harmony, budget, outfit scoring
-├── types/index.js        # JSDoc type definitions
-└── agents/               # NEW — TypeScript agent layer
-    ├── types.ts          # All interfaces, inputs/outputs, types
-    ├── logger.ts         # Structured logging utility
-    ├── profile.agent.ts  # Style profile analysis
-    ├── wardrobe.agent.ts # Product curation/selection
-    ├── outfit.agent.ts   # Outfit composition + scoring
-    ├── critic.agent.ts   # Outfit critique/review
-    └── orchestrator.ts   # Central coordinator (agents never call each other)
+├── App.jsx                         # Slim UI orchestrator (78 lines)
+├── main.jsx / index.css            # Entry + styles
+├── hooks/                          # 5 hooks (4 existing + 1 pending)
+│   ├── useChat.js
+│   ├── useOccasionBuilder.js
+│   ├── useFashionDNA.js
+│   ├── useCapsuleWardrobe.js
+│   └── useOutfitGenerator.js       # ⏳ PENDING — will connect full flow
+├── components/                     # 10 presentational components
+├── data/                           # 7 static data files (products, occasions, etc.)
+├── utils/                          # 3 utility modules (color, budget, outfit)
+├── services/                       # Will add weather.ts + outfitGenerator.ts
+│   ├── ai.js / ai.mock.js / config.js
+├── types/index.js                  # JSDoc types
+├── agents/                         # Phase 2 — TS agent layer
+│   ├── types.ts                    # All interfaces
+│   ├── logger.ts                   # Structured logging
+│   ├── profile.agent.ts            # Style profile analysis
+│   ├── wardrobe.agent.ts           # Product curation
+│   ├── outfit.agent.ts             # Outfit composition with scoring
+│   ├── critic.agent.ts             # 6-dimension critique/verdict
+│   └── orchestrator.ts             # Central coordinator (agents never call each other)
+├── db/                             # Phase 3 — Supabase layer
+│   ├── client.ts                   # Singleton client (null-safe offline)
+│   ├── types.ts                    # Row/Insert/Update types for all tables
+│   ├── index.ts                    # Barrel export
+│   └── repositories/               # 5 repository files (CRUD per table)
+└── vite-env.d.ts                   # Vite import.meta.env types
 ```
 
-## Agent Architecture
+## Git History (last 3 commits)
+```
+3e9924c — refactor: extract business logic into hooks + flat components structure
+3862326 — feat: add TypeScript agent layer with orchestrator architecture
+6e55ba3 — feat: add Supabase database layer with schema and repository pattern
+```
 
-### Rules Enforced
-| Rule | Enforcement |
-|------|------------|
-| No agent-to-agent calls | Only orchestrator imports agents |
-| Typed I/O | Every agent has strict input/output interfaces in types.ts |
-| Never throw | Every agent captures errors, returns fallback |
-| Logging | All agents use `logger.ts` with timestamps and levels |
-| No UI coupling | Agents are pure infrastructure — can be tested standalone |
+## Current Status
+### ✅ Completed (Phases 0–3)
+- **Phase 0**: App.jsx monolith → 30+ modular files (data/, utils/, services/, components/)
+- **Phase 1**: Service enhancements (retry logic, response validation, computed scoring, occasion mapping)
+- **Phase 2**: Agent layer (types, logger, 4 agents, orchestrator) — no agent-to-agent calls, typed I/O
+- **Phase 3**: Supabase DB layer (SQL migration, client, types, 5 repositories) — AI layer separate
 
-### Orchestrator Flows
-| Request Type | Agent Pipeline |
-|-------------|---------------|
-| `analyze_profile` | ProfileAgent (single) |
-| `critique_outfit` | CriticAgent (single) |
-| `build_outfit` | ProfileAgent → WardrobeAgent → OutfitAgent → CriticAgent (4 steps) |
-| `build_capsule` | ProfileAgent → WardrobeAgent (2 steps) |
+### ⏳ In Progress (Phase 4)
+Building the **outfit generator flow**:
+```
+User Profile → Wardrobe → Occasion → Weather → Outfit Agent → Critic Agent → Approved Outfit
+```
+Pending files:
+- `src/services/weather.ts` — Weather/api fetcher with offline fallback
+- `src/services/outfitGenerator.ts` — Full flow coordinator
+- `src/hooks/useOutfitGenerator.(js|ts)` — React hook for UI consumption
 
-### Key interfaces (types.ts)
-- `OrchestratorRequest` / `OrchestratorResponse` — typed request/response
-- `AgentTrace` — execution trace per agent (duration, warnings, success)
-- `ProfileAgentInput/Output` — style profile analysis
-- `WardrobeAgentInput/Output` — product curation
-- `OutfitAgentInput/Output` — outfit composition
-- `CriticAgentInput/Output` — critique with 6 scoring dimensions
-
-## What's Been Done (This Session)
-1. ✅ Added TypeScript support (typescript, tsconfig.json)
-2. ✅ Created `src/agents/types.ts` — all interfaces
-3. ✅ Created `src/agents/logger.ts` — structured logging
-4. ✅ Created `profile.agent.ts` — archetype→profile mapping with brand affinities
-5. ✅ Created `wardrobe.agent.ts` — occasion/ budget/ style-based product selection
-6. ✅ Created `outfit.agent.ts` — outfit composition with 4 scoring dimensions
-7. ✅ Created `critic.agent.ts` — 6-dimension critique with approval/verdict
-8. ✅ Created `orchestrator.ts` — central coordinator with 4 request types
-9. ❌ **Pending: Build verification** — need to compile TypeScript and check zero errors
-
-## Key Decisions
-1. TypeScript only for agent layer — existing JS stays as-is (gradual adoption)
-2. Agents are **async functions**, not classes — simpler composition for orchestrator
-3. Product pool seeded into ProfileAgent lazily (avoids circular deps)
-4. Critic scores on 6 dimensions: occasionFit, budgetCompliance, styleCoherence, colorHarmony, trendAlignment, overall
-5. Orchestrator returns full execution trace for observability
-6. All errors caught at agent level → fallback return (never throws to caller)
-7. Logger uses `console.error/warn/log/debug` with ISO timestamps — no external deps
-
-## Pending
-- **Build verification** — run `npx tsc --noEmit` then `vite build` to confirm zero TypeScript + JS errors
-- Build already has JS part verified (57 modules, 0 errors) — just need to add TS compilation
+## Key Design Decisions
+1. **Layer isolation**: UI never imports agents directly — goes through services/hooks
+2. **Agent isolation**: No agent imports another agent — all through orchestrator
+3. **DB isolation**: db/ never imports from agents/ (only imports data shape types)
+4. **Offline-safe**: Every layer gracefully falls back when API keys / Supabase URL are missing
+5. **TypeScript only for infrastructure**: agents/ and db/ are TS; UI layer stays JS
+6. **Repository pattern**: 5 repos, one per table, typed CRUD with Supabase client
 
 ## Build Status
-- Before agents: 57 modules, 1.61s, 0 errors
-- After agents: Need to verify TypeScript compilation
-- Expected to pass — all JS code unchanged, TS code has JSDoc imports from existing data
+- `tsc --noEmit` → zero errors
+- `npm run build` → 57 modules, ~1.6s, zero errors (agent & db layers tree-shaken since UI doesn't import them yet)
+
+## Pending Tasks (Phase 4)
+1. Create `src/services/weather.ts` — weather data with offline fallback
+2. Create `src/services/outfitGenerator.ts` — full flow: Profile → Wardrobe → Occasion → Weather → OutfitAgent → CriticAgent → result
+3. Create `src/hooks/useOutfitGenerator.js` — React hook wrapping the generator
+4. Verify tsc + build pass
