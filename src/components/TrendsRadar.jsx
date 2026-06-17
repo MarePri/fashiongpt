@@ -4,7 +4,7 @@ import React from 'react';
  * TrendsRadar — current fashion trend display.
  * @param {{ trends: import('../types/index.js').Trend[] }} props
  */
-export default function TrendsRadar({ trends }) {
+function TrendsRadar({ trends }) {
   return (
     <div className="section-pad" style={{ paddingBottom: 40 }}>
       <div className="section-title">Trend Radar</div>
@@ -39,3 +39,5 @@ export default function TrendsRadar({ trends }) {
     </div>
   );
 }
+
+export default React.memo(TrendsRadar);

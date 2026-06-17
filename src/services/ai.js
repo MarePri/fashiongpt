@@ -1,4 +1,4 @@
-import { hasApiKey, getApiKey, isOfflineMode, RETRY_CONFIG } from './config.js';
+import { isOfflineMode, RETRY_CONFIG, API_PROXY_URL } from './config.js';
 import { generateOfflineChatResponse, generateOfflineDNA } from './ai.mock.js';
 
 /**
@@ -22,7 +22,7 @@ function validateResponse(data, expectedType) {
 }
 
 /**
- * Call the Anthropic API with retry logic and fallback.
+ * Call the backend proxy AI endpoint with retry logic and fallback.
  * @param {string} systemPrompt
  * @param {string} userMessage
  * @param {number} [maxTokens=900]
@@ -33,7 +33,6 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 900) {
     return generateOfflineChatResponse(userMessage);
   }
 
-  const apiKey = getApiKey();
   let lastError;
 
   // Retry loop with exponential backoff
@@ -45,20 +44,10 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 900) {
     }
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch(`${API_PROXY_URL}/api/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: maxTokens,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMessage }],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemPrompt, userMessage, maxTokens }),
       });
 
       if (!response.ok) {
@@ -67,7 +56,7 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 900) {
       }
 
       const data = await response.json();
-      const text = data.content?.[0]?.text || '';
+      const text = data.text || data.content || '';
 
       // Validate response
       const validation = validateResponse(text, 'text');

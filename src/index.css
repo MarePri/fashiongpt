@@ -162,3 +162,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 
 .scroll-x { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .scroll-x::-webkit-scrollbar { display: none; }
+
+/* Error Boundary */
+.error-boundary { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px; text-align: center; }
+.error-boundary-content { max-width: 400px; }
+.error-boundary-icon { font-size: 48px; margin-bottom: 16px; }
+.error-boundary-message { font-size: 13px; color: var(--muted); margin: 12px 0 20px; }
+
+/* Skeleton Animation */
+@keyframes skeleton-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+.skeleton { background: var(--border); border-radius: 6px; animation: skeleton-pulse 1.5s ease-in-out infinite; }

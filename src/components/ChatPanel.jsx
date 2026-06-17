@@ -13,7 +13,7 @@ import OutfitCard from './OutfitCard.jsx';
  *   chatEndRef: React.RefObject
  * }} props
  */
-export default function ChatPanel({ messages, input, loading, setInput, sendMessage, prompts, chatEndRef }) {
+function ChatPanel({ messages, input, loading, setInput, sendMessage, prompts, chatEndRef }) {
   return (
     <>
       <div className="chat-area">
@@ -27,13 +27,13 @@ export default function ChatPanel({ messages, input, loading, setInput, sendMess
             <div className="divider" />
             <div className="prompt-chips">
               {prompts.map((p, i) => (
-                <button key={i} className="chip" onClick={() => sendMessage(p)}>{p}</button>
+                <button key={p} className="chip" onClick={() => sendMessage(p)}>{p}</button>
               ))}
             </div>
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
+          <div key={m.id || i} className={`msg ${m.role}`}>
             <div className="msg-avatar">{m.role === 'ai' ? '✦' : '👤'}</div>
             <div style={{ maxWidth: '85%' }}>
               <div className="msg-bubble">{m.content}</div>
@@ -70,3 +70,5 @@ export default function ChatPanel({ messages, input, loading, setInput, sendMess
     </>
   );
 }
+
+export default React.memo(ChatPanel);

@@ -12,7 +12,7 @@ import ColorDot from './ColorDot.jsx';
  *   onReset: () => void
  * }} props
  */
-export default function FashionDNA({ archetypes, selectedArchetype, dnaResult, dnaLoading, buildFashionDNA, onReset }) {
+function FashionDNA({ archetypes, selectedArchetype, dnaResult, dnaLoading, buildFashionDNA, onReset }) {
   return (
     <div className="section-pad" style={{ paddingBottom: 40 }}>
       <div className="section-title">FashionDNA</div>
@@ -96,3 +96,5 @@ export default function FashionDNA({ archetypes, selectedArchetype, dnaResult, d
     </div>
   );
 }
+
+export default React.memo(FashionDNA);

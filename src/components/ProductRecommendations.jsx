@@ -14,7 +14,7 @@ import React from 'react';
  *   }>
  * }} props
  */
-export default function ProductRecommendations({ items }) {
+function ProductRecommendations({ items }) {
   if (!items || items.length === 0) return null;
   return (
     <div className="outfit-items">
@@ -31,3 +31,5 @@ export default function ProductRecommendations({ items }) {
     </div>
   );
 }
+
+export default React.memo(ProductRecommendations);

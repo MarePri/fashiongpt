@@ -12,7 +12,7 @@ import React from 'react';
  */
 import OutfitCard from './OutfitCard.jsx';
 
-export default function Dashboard({ occasions, selectedOccasion, occasionResult, occasionLoading, buildOccasionOutfit }) {
+const Dashboard = React.memo(function Dashboard({ occasions, selectedOccasion, occasionResult, occasionLoading, buildOccasionOutfit }) {
   return (
     <div className="section-pad" style={{ paddingBottom: 40 }}>
       <div className="section-title">Occasion Builder</div>
@@ -56,4 +56,6 @@ export default function Dashboard({ occasions, selectedOccasion, occasionResult,
       )}
     </div>
   );
-}
+});
+
+export default Dashboard;

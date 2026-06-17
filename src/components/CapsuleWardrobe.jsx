@@ -9,7 +9,7 @@ import React from 'react';
  *   onReset: () => void
  * }} props
  */
-export default function CapsuleWardrobe({ capsuleResult, capsuleLoading, buildCapsule, onReset }) {
+function CapsuleWardrobe({ capsuleResult, capsuleLoading, buildCapsule, onReset }) {
   return (
     <div className="section-pad" style={{ paddingBottom: 40 }}>
       <div className="section-title">Capsule Wardrobe</div>
@@ -63,3 +63,5 @@ export default function CapsuleWardrobe({ capsuleResult, capsuleLoading, buildCa
     </div>
   );
 }
+
+export default React.memo(CapsuleWardrobe);

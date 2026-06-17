@@ -4,7 +4,7 @@ import ProductRecommendations from './ProductRecommendations.jsx';
 /**
  * @param {{ outfit: import('../types/index.js').Outfit | null }} props
  */
-export default function OutfitCard({ outfit }) {
+function OutfitCard({ outfit }) {
   if (!outfit) return null;
   const total = outfit.items?.reduce((s, i) => s + (i.price || 0), 0) || 0;
   return (
@@ -32,3 +32,5 @@ export default function OutfitCard({ outfit }) {
     </div>
   );
 }
+
+export default React.memo(OutfitCard);

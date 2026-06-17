@@ -9,6 +9,9 @@ export const RETRY_CONFIG = {
   BASE_DELAY_MS: 1000,
 };
 
+/** Base URL for the local proxy server (keeps API key server-side) */
+export const API_PROXY_URL = import.meta.env.VITE_API_PROXY_URL || 'http://localhost:3001';
+
 /** Check if an Anthropic API key is available in the environment */
 export function hasApiKey() {
   try {
@@ -18,9 +21,19 @@ export function hasApiKey() {
   }
 }
 
+/** Check if the backend proxy is configured */
+export function hasProxyUrl() {
+  try {
+    return !!(import.meta.env.VITE_API_PROXY_URL);
+  } catch {
+    return false;
+  }
+}
+
 /** Whether to use offline (mock) mode instead of live AI API */
 export function isOfflineMode() {
-  return !hasApiKey();
+  // Online if either a proxy URL is set (preferred) or a direct API key is set (legacy)
+  return !hasProxyUrl() && !hasApiKey();
 }
 
 /** Get the Anthropic API key */
