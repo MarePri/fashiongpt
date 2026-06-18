@@ -20,12 +20,14 @@ import FashionDNA from "./components/FashionDNA.jsx";
 import TrendsRadar from "./components/TrendsRadar.jsx";
 import CapsuleWardrobe from "./components/CapsuleWardrobe.jsx";
 import SavedLooks from "./components/SavedLooks.jsx";
+import Discovery from "./components/Discovery.jsx";
 import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: "outfit", icon: "✨", label: "Outfit" },
   { id: "looks", icon: "❤️", label: "Saved" },
+  { id: "discover", icon: "🌍", label: "Discover" },
   { id: "dna", icon: "🧬", label: "DNA" },
   { id: "trends", icon: "📈", label: "Trends" },
   { id: "chat", icon: "💬", label: "Chat" },
@@ -57,6 +59,7 @@ export default function FashionGPT() {
       <SavedOutfitsProvider>
         {tab === "outfit" && <OutfitGenerator memory={memory} />}
         {tab === "looks" && <SavedLooks />}
+        {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...memory.data.lastInputs, archetype: archId } }); handleTabChange('outfit'); }} />}
       </SavedOutfitsProvider>
 
       {tab === "chat" && (
