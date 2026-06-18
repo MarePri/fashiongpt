@@ -51,11 +51,20 @@
 - "Try This Look" now uses key-based remount (tryLookNonce → fresh OutfitGenerator mount)
 
 ## Pending Tasks
-All Phase 2 items delivered. Ready for Phase 3.
+All Phase 2 items delivered.
 
-### Candidate: StyleCoach — Iterative Refinement
-- Feedback loop: user sees outfit → gives feedback → agents refine → shows revised version
-- Needs: `feedback` param in generateOutfit, feedback UI component, iteration state
+### Phase 3: StyleCoach — DELIVERED (commit 039b785)
+- **handleRefine** function: re-runs `generate()` with user feedback appended to `styleGoal`
+  - e.g. styleGoal becomes `"A versatile look for summer wedding. User feedback: more colorful"`
+  - Full pipeline re-run (all 4 agents) with feedback as added context
+- **Refine UI** in results area:
+  - "✨ StyleCoach — Refine This Look" toggle (dashed accent border, below critic section)
+  - Text input with placeholder + autoFocus, placeholder: `e.g. "more colorful", "less formal", "add accessories"`
+  - Enter to submit, Escape to cancel
+  - "Refine →" submit button + "Cancel" button
+  - Spinner during refinement (rotating circle + "Refining your look…")
+  - Auto-closes on switching look tabs (useEffect on activeVariation)
+- Build: 75 modules, 0 errors | Tests: 6/6 pass | CSS: 26.67 kB, JS: 227.35 kB
 
 ## Key Architecture Facts
 - `useOutfitGenerator` calls `generateOutfit()` from `outfitGenerator.ts`

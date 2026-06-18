@@ -172,6 +172,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 /* Skeleton Animation */
 @keyframes skeleton-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 .skeleton { background: var(--border); border-radius: 6px; animation: skeleton-pulse 1.5s ease-in-out infinite; }
+.skeleton-line { height: 12px; width: 60%; margin-bottom: 12px; background: var(--border); border-radius: 6px; animation: skeleton-pulse 1.5s ease-in-out infinite; }
+.skeleton-block { height: 120px; width: 100%; background: var(--border); border-radius: 8px; animation: skeleton-pulse 1.5s ease-in-out infinite; }
+.og-skeleton { padding: 20px 0; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    OUTFIT GENERATOR
