@@ -23,14 +23,16 @@ UI (JSX) → Hooks/Components → Services/Agents (TS) → DB (TS/Supabase)
 | `index.css` — +300 lines of component styles | ✅ |
 | Committed + pushed to GitHub: `ddc6d10` → `origin/main` | ✅ |
 
-## Phase 2 — Memory Persistence (In Progress)
-| Task | Status |
-|------|--------|
-| T1.1 — Create `useMemory` hook | ⏳ Next |
-| T1.2 — Wire memory into App.jsx (tab restore) | ⬜ |
-| T1.3 — Wire memory into OutfitGenerator (input restore) | ⬜ |
-| T1.4 — Build verification | ⬜ |
-| T1.5 — Reviewer verification + commit | ⬜ |
+## Phase 2 — Memory Persistence ✅
+| Delivery | Status |
+|----------|--------|
+| `useMemory` hook — localStorage session with save/restore/clear/recordGeneration | ✅ |
+| App.jsx — restore lastTab on mount, persist tab changes | ✅ |
+| OutfitGenerator — pre-fill inputs from memory, show previous results, welcome-back banner | ✅ |
+| index.css — og-banner styles with slide-down animation | ✅ |
+| Unit tests — 6/6 passing (save/restore roundtrip, partial merge, recordGeneration, clear, corrupt data) | ✅ |
+| Build — 72 modules, 0 errors | ✅ |
+| GitHub — `9960c61` → `origin/main` | ✅ |
 
 ## Key Architecture Decisions
 - **Agent pipeline** (ProfileAgent→WardrobeAgent→OutfitAgent→CriticAgent) is production-quality TS but was invisible to users — Phase 1 connected it to UI

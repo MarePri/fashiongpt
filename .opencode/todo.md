@@ -1,9 +1,9 @@
 # Mission: Phase 2 — Memory Persistence (Stop Starting From Zero)
 
-## M1: Session Memory | status: in_progress
+## M1: Session Memory | status: completed
 ### T1.1: Create useMemory hook | agent:Worker
 - [x] S1.1.1: Create src/hooks/useMemory.js with localStorage persistence for lastTab, lastInputs, lastResults, lastVisit
-- [ ] S1.1.2: Unit test: save + restore roundtrip | size:S
+- [x] S1.1.2: Unit test: save + restore roundtrip | size:S
 
 ### T1.2: Wire memory into App.jsx | agent:Worker | depends:T1.1
 - [x] S1.2.1: Restore lastTab on mount | size:S
