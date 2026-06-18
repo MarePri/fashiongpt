@@ -8,34 +8,33 @@ import { PROMPTS } from "./data/prompts.js";
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 import useChat from "./hooks/useChat.js";
-import useOccasionBuilder from "./hooks/useOccasionBuilder.js";
 import useFashionDNA from "./hooks/useFashionDNA.js";
 import useCapsuleWardrobe from "./hooks/useCapsuleWardrobe.js";
-
 // ─── Components ───────────────────────────────────────────────────────────────
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
-import Dashboard from "./components/Dashboard.jsx";
+import OutfitGenerator from "./components/OutfitGenerator.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import FashionDNA from "./components/FashionDNA.jsx";
 import TrendsRadar from "./components/TrendsRadar.jsx";
 import CapsuleWardrobe from "./components/CapsuleWardrobe.jsx";
+import SavedLooks from "./components/SavedLooks.jsx";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "chat", icon: "💬", label: "Chat" },
-  { id: "discover", icon: "✨", label: "Style" },
-  { id: "trends", icon: "📈", label: "Trends" },
+  { id: "outfit", icon: "✨", label: "Outfit" },
+  { id: "looks", icon: "❤️", label: "Saved" },
   { id: "dna", icon: "🧬", label: "DNA" },
+  { id: "trends", icon: "📈", label: "Trends" },
+  { id: "chat", icon: "💬", label: "Chat" },
   { id: "capsule", icon: "🗂", label: "Capsule" },
 ];
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function FashionGPT() {
-  const [tab, setTab] = useState("chat");
+  const [tab, setTab] = useState("outfit");
 
   const chat = useChat();
-  const occasion = useOccasionBuilder();
   const dna = useFashionDNA();
   const capsule = useCapsuleWardrobe();
 
@@ -46,6 +45,10 @@ export default function FashionGPT() {
         <Sidebar tabs={TABS} activeTab={tab} onTabChange={setTab} />
       </div>
 
+      {tab === "outfit" && <OutfitGenerator />}
+
+      {tab === "looks" && <SavedLooks />}
+
       {tab === "chat" && (
         <ChatPanel
           messages={chat.messages}
@@ -55,16 +58,6 @@ export default function FashionGPT() {
           sendMessage={chat.sendMessage}
           prompts={PROMPTS}
           chatEndRef={chat.chatEndRef}
-        />
-      )}
-
-      {tab === "discover" && (
-        <Dashboard
-          occasions={OCCASIONS}
-          selectedOccasion={occasion.selectedOccasion}
-          occasionResult={occasion.occasionResult}
-          occasionLoading={occasion.occasionLoading}
-          buildOccasionOutfit={occasion.buildOccasionOutfit}
         />
       )}
 

@@ -95,4 +95,29 @@
  * @property {number} combos
  */
 
+/**
+ * @typedef {Object} CriticScores
+ * @property {number} styleScore
+ * @property {number} occasionScore
+ * @property {number} weatherScore
+ * @property {number} colorHarmony
+ * @property {number} confidence
+ * @property {string} reasoning
+ */
+
+/**
+ * @typedef {Object} SavedOutfit
+ * @property {string} id - Unique ID (timestamp-based)
+ * @property {string} name - Outfit name
+ * @property {string} occasion - Occasion label
+ * @property {import('../services/outfitGenerator.ts').OutfitGeneratorResult} result - Full generation result
+ * @property {number} rating - User rating (1-5, 0 = unrated)
+ * @property {number} savedAt - Timestamp
+ * @property {number} [budget] - Budget used
+ */
+
+/**
+ * @typedef {'input'|'generating'|'results'|'error'} GeneratorStep
+ */
+
 export {};
