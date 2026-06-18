@@ -388,3 +388,54 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .og-banner-link { background: none; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 11px; padding: 0; }
 .og-banner-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 6px; transition: all 0.2s; }
 .og-banner-close:hover { background: var(--surface); color: var(--text); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DISCOVERY SCREEN
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.discovery { padding-bottom: 80px; }
+
+/* Filter chips */
+.disc-filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+.disc-filter-chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 11px; color: var(--muted); cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.disc-filter-chip:hover { border-color: var(--accent); color: var(--text); }
+.disc-filter-chip.active { border-color: var(--accent); background: rgba(201,130,107,0.1); color: var(--accent); }
+
+/* Archetype section */
+.disc-arch-section { margin-bottom: 28px; }
+.disc-arch-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.disc-arch-icon { font-size: 24px; }
+.disc-arch-name { font-size: 15px; font-weight: 500; font-family: 'Playfair Display', serif; }
+.disc-arch-desc { font-size: 10px; color: var(--muted); }
+
+/* Outfit cards grid */
+.disc-outfits { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .disc-outfits { grid-template-columns: 1fr; } }
+
+.disc-outfit-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; transition: all 0.2s; }
+.disc-outfit-card:hover { border-color: rgba(201,130,107,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+.disc-vibe-badge { display: inline-block; font-size: 9px; color: var(--accent); background: rgba(201,130,107,0.1); padding: 2px 8px; border-radius: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* Items */
+.disc-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.disc-item { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+.disc-item-img { font-size: 16px; }
+.disc-item-name { flex: 1; color: var(--text); font-weight: 450; }
+.disc-item-brand { font-size: 9px; color: var(--muted); }
+.disc-item-price { font-size: 10px; font-weight: 500; color: var(--accent); }
+
+/* Color palette */
+.disc-palette { display: flex; gap: 4px; margin-bottom: 10px; }
+.disc-swatch { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); }
+
+/* Total */
+.disc-total { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid var(--border); margin-bottom: 10px; }
+.disc-total-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.disc-total-price { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--accent); }
+
+/* Try this look */
+.disc-try-btn { width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; border: none; border-radius: 10px; padding: 8px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.disc-try-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,130,107,0.3); }
+
+.disc-empty { font-size: 11px; color: var(--muted); padding: 12px 0; }
