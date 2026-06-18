@@ -123,6 +123,8 @@ export interface WardrobeAgentInput {
   budget: number | null;
   requiredCategories: string[];
   preferredCategories: string[];
+  /** Free-form style goal / user feedback to influence product selection */
+  styleGoal?: string;
 }
 
 export interface WardrobeSelection {

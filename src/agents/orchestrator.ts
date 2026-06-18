@@ -215,6 +215,7 @@ export async function handleRequest(request: OrchestratorRequest): Promise<Orche
           budget,
           requiredCategories: ['Tops', 'Bottoms', 'Shoes'],
           preferredCategories: (request.payload.preferredCategories as string[]) || ['Bags', 'Outerwear', 'Accessories'],
+          styleGoal: request.payload.styleGoal as string | undefined,
         };
 
         const wardrobeStart = Date.now();

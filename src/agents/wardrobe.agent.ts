@@ -58,7 +58,8 @@ function pickAffordable(
   pool: Product[],
   category: string,
   styleTags: string[],
-  maxPrice: number
+  maxPrice: number,
+  styleGoalContext?: { colorBoost: 'colorful' | 'neutral' | null; priceSensitivity: number } | null
 ): Product | null {
   const candidates = pool.filter(
     p => p.cat.toLowerCase() === category.toLowerCase() && p.price <= maxPrice
@@ -70,16 +71,87 @@ function pickAffordable(
     const overlap = p.style.filter(s =>
       styleTags.some(t => t.toLowerCase() === s.toLowerCase())
     ).length;
-    // Jitter (±5) ensures variety between generations while favoring best matches
-    const jitter = (Math.random() - 0.5) * 10;
-    return {
-      product: p,
-      score: overlap * 15 + (p.trend || 50) - p.price * 0.1 + jitter,
-    };
+    // Style tag match score
+    let score = overlap * 15 + (p.trend || 50);
+    // Price penalty (modulated by price sensitivity from user feedback)
+    const priceFactor = styleGoalContext?.priceSensitivity ?? 1.0;
+    score -= p.price * 0.1 * priceFactor;
+    // Color boost from user feedback ("more colorful" / "neutral")
+    if (styleGoalContext?.colorBoost === 'colorful') {
+      const neutrals = ['Black','White','Beige','Grey','Cream','Ivory','Ecru','Champagne','Tan','Sand','Camel','Charcoal','Slate','Navy'];
+      const isNeutral = neutrals.some(n => p.color.toLowerCase().includes(n.toLowerCase()));
+      score += isNeutral ? -8 : 12; // penalize neutrals, boost colors
+    } else if (styleGoalContext?.colorBoost === 'neutral') {
+      const neutrals = ['Black','White','Beige','Grey','Cream','Ivory','Ecru','Champagne','Tan','Sand','Camel','Charcoal','Slate','Navy'];
+      const isNeutral = neutrals.some(n => p.color.toLowerCase().includes(n.toLowerCase()));
+      score += isNeutral ? 12 : -8;
+    }
+    // Jitter ensures variety between generations while favoring best matches
+    score += (Math.random() - 0.5) * 10;
+    return { product: p, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
   return scored[0].product;
+}
+
+// ─── Style Goal Intent Parsing ────────────────────────────────────────────────
+
+/**
+ * Parse styleGoal text for intent keywords and return score adjustments + category hints.
+ * This is how user feedback ("more colorful", "formal", "cheaper") influences product selection.
+ */
+function parseStyleGoalIntent(styleGoal: string | undefined): {
+  /** Score boost/penalty for products matching certain color types */
+  colorBoost: 'colorful' | 'neutral' | null;
+  /** Score boost for products matching certain style tags */
+  styleBoost: string[];
+  /** Categories to add to preferred list */
+  extraCategories: string[];
+  /** Price sensitivity multiplier (>1 = prefer cheaper) */
+  priceSensitivity: number;
+} {
+  const result = {
+    colorBoost: null as 'colorful' | 'neutral' | null,
+    styleBoost: [] as string[],
+    extraCategories: [] as string[],
+    priceSensitivity: 1.0,
+  };
+
+  if (!styleGoal) return result;
+
+  const lower = styleGoal.toLowerCase();
+
+  // Color intent
+  if (/colorful|vibrant|bright|bold|pop/i.test(lower)) result.colorBoost = 'colorful';
+  if (/neutral|minimal|muted|subtle|monochrome/i.test(lower)) result.colorBoost = 'neutral';
+
+  // Style intent
+  if (/formal|professional|office|sharp|tailored/i.test(lower)) result.styleBoost.push('office', 'formal', 'smart casual');
+  if (/casual|relaxed|comfortable|everyday/i.test(lower)) result.styleBoost.push('casual', 'everyday', 'weekend');
+  if (/edgy|bold|statement|avant/i.test(lower)) result.styleBoost.push('streetwear', 'concert', 'festival');
+  if (/romantic|feminine|soft|elegant/i.test(lower)) result.styleBoost.push('romantic', 'date', 'evening', 'wedding');
+  if (/sport|athletic|gym|active/i.test(lower)) result.styleBoost.push('sport', 'gym', 'wellness');
+
+  // Category intent
+  if (/accessor|jewelry|bag|belt|hat/i.test(lower) && !result.extraCategories.includes('Accessories'))
+    result.extraCategories.push('Accessories');
+  if (/jacket|coat|outerwear|layer/i.test(lower) && !result.extraCategories.includes('Outerwear'))
+    result.extraCategories.push('Outerwear');
+  if (/shoe|sneaker|boot|heel|footwear/i.test(lower) && !result.extraCategories.includes('Shoes'))
+    result.extraCategories.push('Shoes');
+  if (/dress|skirt/i.test(lower) && !result.extraCategories.includes('Dresses'))
+    result.extraCategories.push('Dresses');
+  if (/top|shirt|blouse|tee/i.test(lower) && !result.extraCategories.includes('Tops'))
+    result.extraCategories.push('Tops');
+  if (/bottom|pant|jean|short|trouser/i.test(lower) && !result.extraCategories.includes('Bottoms'))
+    result.extraCategories.push('Bottoms');
+
+  // Price intent
+  if (/cheap|affordable|budget|cheaper|inexpensive|bargain|save/i.test(lower)) result.priceSensitivity = 2.0;
+  if (/premium|luxury|designer|expensive|investment|quality/i.test(lower)) result.priceSensitivity = 0.3;
+
+  return result;
 }
 
 // ─── Main Entry Point ─────────────────────────────────────────────────────────
@@ -125,6 +197,39 @@ export async function curateWardrobe(input: WardrobeAgentInput): Promise<Wardrob
       logger.warn(AGENT, 'Could not load occasion map');
     }
 
+    // Parse styleGoal/user feedback for intent-driven adjustments
+    let styleGoalContext = null as {
+      colorBoost: 'colorful' | 'neutral' | null;
+      styleBoost: string[];
+      priceSensitivity: number;
+    } | null;
+    if (input.styleGoal) {
+      const intent = parseStyleGoalIntent(input.styleGoal);
+      // Extend style tags with intent-derived style tags
+      for (const tag of intent.styleBoost) {
+        if (!styleTags.includes(tag)) styleTags.push(tag);
+      }
+      // Extend preferred categories with intent-derived categories
+      for (const cat of intent.extraCategories) {
+        if (!input.preferredCategories.includes(cat)) {
+          (input.preferredCategories as string[]).push(cat);
+        }
+      }
+      styleGoalContext = {
+        colorBoost: intent.colorBoost,
+        styleBoost: intent.styleBoost,
+        priceSensitivity: intent.priceSensitivity,
+      };
+      if (intent.priceSensitivity !== 1.0 || intent.colorBoost || intent.styleBoost.length > 0) {
+        logger.info(AGENT, 'StyleGoal intent applied', {
+          colorBoost: intent.colorBoost,
+          styleBoost: intent.styleBoost,
+          priceSensitivity: intent.priceSensitivity,
+          extraCategories: intent.extraCategories,
+        });
+      }
+    }
+
     // Filter pool by style tags
     const filtered = filterByStyleTags(pool, styleTags);
     if (filtered.length === 0) {
@@ -146,7 +251,7 @@ export async function curateWardrobe(input: WardrobeAgentInput): Promise<Wardrob
 
     // Phase 1: Fill required categories
     for (const { cat, required } of categories) {
-      const product = pickAffordable(workPool, cat, styleTags, remaining);
+      const product = pickAffordable(workPool, cat, styleTags, remaining, styleGoalContext);
 
       if (product) {
         selections.push({
@@ -158,7 +263,7 @@ export async function curateWardrobe(input: WardrobeAgentInput): Promise<Wardrob
         remaining -= product.price;
       } else if (required) {
         // Fallback: try from full pool without style filter
-        const fallback = pickAffordable(pool, cat, styleTags, remaining);
+        const fallback = pickAffordable(pool, cat, styleTags, remaining, styleGoalContext);
         if (fallback) {
           selections.push({
             product: fallback,
