@@ -16,14 +16,15 @@ import { OutfitSkeleton } from './Skeleton.jsx';
  *
  * Props:
  *   memory — useMemory hook (optional) for session persistence
+ *   presetArchetype — archetype ID from Discovery (higher priority than memory)
  */
-export default function OutfitGenerator({ memory }) {
+export default function OutfitGenerator({ memory, presetArchetype }) {
   const generator = useOutfitGenerator();
   const saved = useSavedOutfitsContext();
 
-  // Restore inputs from session memory
+  // Restore inputs from session memory (presetArchetype from Discovery takes priority)
   const initialOccasion = memory?.data?.lastInputs?.occasion || null;
-  const initialArchetype = memory?.data?.lastInputs?.archetype || null;
+  const initialArchetype = presetArchetype || memory?.data?.lastInputs?.archetype || null;
   const initialBudget = memory?.data?.lastInputs?.budget || '';
 
   // If returning with previous results, show them immediately
@@ -33,6 +34,15 @@ export default function OutfitGenerator({ memory }) {
   const [selectedOccasion, setSelectedOccasion] = useState(initialOccasion);
   const [selectedArchetype, setSelectedArchetype] = useState(initialArchetype);
   const [budget, setBudget] = useState(initialBudget);
+
+  // Consume presetArchetype from Discovery — save to memory, clear the prop
+  const consumedPreset = useRef(false);
+  React.useEffect(() => {
+    if (presetArchetype && memory && !consumedPreset.current) {
+      consumedPreset.current = true;
+      memory.save({ lastInputs: { ...(memory.data.lastInputs || {}), archetype: presetArchetype } });
+    }
+  }, [presetArchetype, memory]);
   const [looks, setLooks] = useState(() => {
     if (memory?.data?.lastResults && memory.isReturning) {
       return memory.data.lastResults;
@@ -353,21 +363,7 @@ export default function OutfitGenerator({ memory }) {
             {activeLook.approved && <span className="og-meta-item og-approved">✓ Critic Approved</span>}
           </div>
 
-          {/* Agent traces (debug) */}
-          {activeLook.agentTraces && activeLook.agentTraces.length > 0 && (
-            <details className="og-traces">
-              <summary className="og-traces-summary">Execution details</summary>
-              <div className="og-traces-list">
-                {activeLook.agentTraces.map((t, i) => (
-                  <div key={i} className={`og-trace-item ${t.success ? 'ok' : 'fail'}`}>
-                    <span>{t.agent}</span>
-                    <span>{t.duration}ms</span>
-                    <span>{t.success ? '✓' : '✗'}</span>
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
+
         </div>
       )}
 
