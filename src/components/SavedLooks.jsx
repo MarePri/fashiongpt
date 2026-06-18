@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useSavedOutfits from '../hooks/useSavedOutfits.js';
+import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
 
@@ -10,7 +10,7 @@ import CriticScore from './CriticScore.jsx';
 function SavedLooks() {
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'rated' | 'unrated'
-  const { savedOutfits, removeOutfit, rateOutfit } = useSavedOutfits();
+  const { savedOutfits, removeOutfit, rateOutfit } = useSavedOutfitsContext();
 
   // Filter
   const filtered = savedOutfits.filter(o => {

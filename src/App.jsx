@@ -20,6 +20,7 @@ import FashionDNA from "./components/FashionDNA.jsx";
 import TrendsRadar from "./components/TrendsRadar.jsx";
 import CapsuleWardrobe from "./components/CapsuleWardrobe.jsx";
 import SavedLooks from "./components/SavedLooks.jsx";
+import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -53,9 +54,10 @@ export default function FashionGPT() {
         <Sidebar tabs={TABS} activeTab={tab} onTabChange={handleTabChange} />
       </div>
 
-      {tab === "outfit" && <OutfitGenerator memory={memory} />}
-
-      {tab === "looks" && <SavedLooks />}
+      <SavedOutfitsProvider>
+        {tab === "outfit" && <OutfitGenerator memory={memory} />}
+        {tab === "looks" && <SavedLooks />}
+      </SavedOutfitsProvider>
 
       {tab === "chat" && (
         <ChatPanel

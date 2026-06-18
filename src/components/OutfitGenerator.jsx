@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
-import useSavedOutfits from '../hooks/useSavedOutfits.js';
+import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
 import { OCCASIONS } from '../data/occasions.js';
@@ -18,7 +18,7 @@ import { OutfitSkeleton } from './Skeleton.jsx';
  */
 export default function OutfitGenerator({ memory }) {
   const generator = useOutfitGenerator();
-  const saved = useSavedOutfits();
+  const saved = useSavedOutfitsContext();
 
   // Restore inputs from session memory
   const initialOccasion = memory?.data?.lastInputs?.occasion || null;
