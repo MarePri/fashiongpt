@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
+import { useStyleMemoryContext } from '../hooks/StyleMemoryContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
 import GeneratingAnimation from './GeneratingAnimation.jsx';
@@ -21,6 +22,7 @@ import { OutfitSkeleton } from './Skeleton.jsx';
 export default function OutfitGenerator({ memory }) {
   const generator = useOutfitGenerator();
   const saved = useSavedOutfitsContext();
+  const styleMem = useStyleMemoryContext();
 
   // Restore inputs from session memory
   const initialOccasion = memory?.data?.lastInputs?.occasion || null;
@@ -72,15 +74,23 @@ export default function OutfitGenerator({ memory }) {
     const occasionText = occasionObj ? `${occasionObj.label} — ${occasionObj.vibe}` : selectedOccasion;
     const budgetNum = budget ? parseFloat(budget) : null;
 
+    // Inject learned style memory into generation (personalization)
+    const memPrefs = styleMem?.getPreferences() || {};
+    const memSummary = styleMem?.getSummary() || '';
+
     // Generate 3 looks IN PARALLEL — ~3× faster than sequential
     const promises = [0, 1, 2].map((i) => {
-      const styleGoal = styleVariations[i]?.label || 'Versatile';
+      const variationLabel = styleVariations[i]?.label || 'Versatile';
+      const variationGoal = memSummary
+        ? `A ${variationLabel.toLowerCase()} look for ${occasionText}. ${memSummary}`
+        : `A ${variationLabel.toLowerCase()} look for ${occasionText}`;
       return generator
         .generate({
           occasion: occasionText,
           budget: budgetNum,
           archetypeId: styleVariations[i]?.id || undefined,
-          styleGoal: `A ${styleGoal.toLowerCase()} look for ${occasionText}`,
+          styleGoal: variationGoal,
+          preferredCategories: memPrefs.preferredCategories,
         })
         .then((result) =>
           result
@@ -111,7 +121,8 @@ export default function OutfitGenerator({ memory }) {
       { occasion: selectedOccasion, archetype: selectedArchetype, budget },
       results
     );
-  }, [selectedOccasion, selectedArchetype, budget, generator, memory]);
+    styleMem?.recordGeneration(selectedOccasion, selectedArchetype);
+  }, [selectedOccasion, selectedArchetype, budget, generator, memory, styleMem]);
 
   /**
    * Regenerate a single look.
@@ -121,6 +132,10 @@ export default function OutfitGenerator({ memory }) {
     const occasionObj = OCCASIONS.find(o => o.id === selectedOccasion);
     const occasionText = occasionObj ? `${occasionObj.label} — ${occasionObj.vibe}` : selectedOccasion;
     const budgetNum = budget ? parseFloat(budget) : null;
+
+    // Record the old look as a negative signal (user didn't want it)
+    const oldLook = looks[index];
+    if (oldLook) styleMem?.recordRegenerate(oldLook);
 
     try {
       const result = await generator.generate({
@@ -139,7 +154,7 @@ export default function OutfitGenerator({ memory }) {
     } catch (err) {
       console.warn(`[OutfitGenerator] Regeneration ${index + 1} failed:`, err);
     }
-  }, [selectedOccasion, selectedArchetype, budget, generator]);
+  }, [selectedOccasion, selectedArchetype, budget, generator, looks, styleMem]);
 
   /**
    * Refine a look with user feedback — re-runs generation with feedback appended to styleGoal.
@@ -153,12 +168,22 @@ export default function OutfitGenerator({ memory }) {
     setRefiningIndex(index);
     setFeedbackText('');
 
+    // Inject style memory preference data
+    const memPrefs = styleMem?.getPreferences() || {};
+    const memSummary = styleMem?.getSummary() || '';
+
     try {
+      const baseGoal = `A ${(styleVariations[index]?.label || 'versatile').toLowerCase()} look for ${occasionText}`;
+      const feedbackSuffix = `User feedback: ${feedback.trim()}`;
+      const fullGoal = memSummary
+        ? `${baseGoal}. ${memSummary} ${feedbackSuffix}`
+        : `${baseGoal}. ${feedbackSuffix}`;
       const result = await generator.generate({
         occasion: occasionText,
         budget: budgetNum,
         archetypeId: styleVariations[index]?.id || undefined,
-        styleGoal: `A ${(styleVariations[index]?.label || 'versatile').toLowerCase()} look for ${occasionText}. User feedback: ${feedback.trim()}`,
+        styleGoal: fullGoal,
+        preferredCategories: memPrefs.preferredCategories,
       });
       if (result) {
         setLooks(prev => {
@@ -172,7 +197,7 @@ export default function OutfitGenerator({ memory }) {
     } finally {
       setRefiningIndex(null);
     }
-  }, [selectedOccasion, selectedArchetype, budget, generator]);
+  }, [selectedOccasion, selectedArchetype, budget, generator, styleMem]);
 
   /**
    * Save the active look.
@@ -187,7 +212,9 @@ export default function OutfitGenerator({ memory }) {
       look,
       budget ? parseFloat(budget) : null
     );
-  }, [looks, selectedOccasion, budget, saved]);
+    // Record in style memory (learns user's taste)
+    styleMem?.recordSave(look, selectedOccasion, selectedArchetype);
+  }, [looks, selectedOccasion, selectedArchetype, budget, saved, styleMem]);
 
   /**
    * Rate a saved look (via the saved outfit ID after saving).
@@ -336,7 +363,10 @@ export default function OutfitGenerator({ memory }) {
   return (
     <div className="section-pad outfit-gen">
       <div className="og-results-header">
-        <div className="section-title">Your 3 Looks</div>
+        <div className="section-title">
+          Your 3 Looks
+          {styleMem?.hasData && <span className="og-personalized-badge">✦ Personalized</span>}
+        </div>
         <div className="section-sub">
           {OCCASIONS.find(o => o.id === selectedOccasion)?.label || 'Styled for you'}
           {budget ? ` · €${budget} budget` : ''}

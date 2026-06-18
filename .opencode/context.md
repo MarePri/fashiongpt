@@ -1,83 +1,59 @@
-# Project Context
+# Project Context — fashiongpt
 
 ## Environment
 - Language: JavaScript (React) + TypeScript (Agents)
-- Runtime: Node.js, Vite 5.4
-- Build: `npm run build` (vite build, 75 modules, 0 errors)
-- Test: `npm test` (vitest, jsdom env, 6 tests pass)
-- Package Manager: npm
+- Build: `npm run build` (vite, 75 modules, 0 errors)
+- Test: `npm test` (vitest, jsdom, 6 tests pass)
+- Package: npm
 
-## Project Type
-- [x] Application (Web/React SPA — fashion styling assistant)
-- Infrastructure: None (static SPA, client-side Anthropic API calls)
+## Delivered This Session (13 commits)
 
-## Structure
-- Source: `src/`
-  - `components/` — React components
-  - `hooks/` — Custom hooks (useMemory, useSavedOutfits, useOutfitGenerator)
-  - `services/` — Business logic (outfitGenerator.ts, weather.ts)
-  - `agents/` — Agent pipeline (ProfileAgent→WardrobeAgent→OutfitAgent→CriticAgent via orchestrator.ts)
-  - `data/` — Static data (archetypes.js, products.js, occasionMap.js, trends.js)
-  - `utils/` — Helpers (outfit.js)
-  - `db/` — Database layer (not connected to UI)
-  - `server/` — Express server (not used in current flow)
-- Tests: `src/hooks/__tests__/useMemory.test.js` (6 tests)
-- Entry: `src/App.jsx`
+### Phase 1 — Outfit Experience
+- OutfitGenerator (3 looks, multi-step flow), CriticScore, SavedLooks, OutfitCard, tabs
 
-## Current Status
-### Outfit Experience (Phase 1) — DELIVERED
-- `OutfitGenerator.jsx`: Multi-step flow (occasion → archetype → budget → generate → 3 results)
-- `CriticScore.jsx`: Score bars (4 categories), verdict, weather, suggestions, issues
-- `SavedLooks.jsx`: Collection with stats bar, filters, inline rate/remove, critic toggle
-- `OutfitCard.jsx`: Save heart, star rating, regenerate, remove buttons
-- Tab structure: Outfit (default), Saved, Discover, DNA, Trends, Chat, Capsule
+### Phase 2 — Memory & Performance
+- useMemory (session persistence), SavedOutfitsContext (real-time sync), parallel generation (Promise.all, 3×), GeneratingAnimation, Discovery screen
 
-### Memory & Performance (Phase 2) — DELIVERED
-- `useMemory.js`: Session persistence (lastTab, lastInputs, lastResults, lastVisit, isReturning, recordGeneration)
-- `useMemory.test.js`: 6 unit tests (save/restore, merge, recordGeneration, clear, corrupt data)
-- `SavedOutfitsContext.jsx`: React context for cross-component outfit sync
-- Parallel generation: `Promise.all` for 3 looks (~3× speedup)
-- `GeneratingAnimation.jsx`: Cycle icons, agent stage pipeline, style tips, breathing progress bar
+### Fixes
+- Removed agent traces / og-meta debug UI
+- Try This Look now uses key-based remount (tryLookNonce → fresh mount)
 
-### Discovery Screen (Phase 2.5) — DELIVERED
-- `Discovery.jsx`: Curated looks per archetype from product catalog
-- Filter chips (All / Minimalist / Streetwear / Romantic / Professional)
-- Color swatches, item names/brands/prices, "Try This Look" button
+### Phase 3 — StyleCoach
+- Refinement: feedback input in results, re-runs generation with feedback in styleGoal
+- Enter to submit, Escape to cancel, spinner while refining
 
-### Fixes Applied (commit 44f98c6)
-- Removed agent traces debug section
-- Removed og-meta div (confidence, duration, critic approved)
-- Removed unused CSS (og-meta, og-traces)
-- "Try This Look" now uses key-based remount (tryLookNonce → fresh OutfitGenerator mount)
+### Phase 4 — Code Splitting
+- React.lazy for all 7 tabs + Suspense fallback
+- Main chunk: 172 kB (was 227, -24%), 9 lazy chunks load on demand
 
-## Pending Tasks
-All Phase 2 items delivered.
+## In Progress — Style Memory (Personalization)
 
-### Phase 3: StyleCoach — DELIVERED (commit 039b785)
-- **handleRefine** function: re-runs `generate()` with user feedback appended to `styleGoal`
-  - e.g. styleGoal becomes `"A versatile look for summer wedding. User feedback: more colorful"`
-  - Full pipeline re-run (all 4 agents) with feedback as added context
-- **Refine UI** in results area:
-  - "✨ StyleCoach — Refine This Look" toggle (dashed accent border, below critic section)
-  - Text input with placeholder + autoFocus, placeholder: `e.g. "more colorful", "less formal", "add accessories"`
-  - Enter to submit, Escape to cancel
-  - "Refine →" submit button + "Cancel" button
-  - Spinner during refinement (rotating circle + "Refining your look…")
-  - Auto-closes on switching look tabs (useEffect on activeVariation)
-- Build: 75 modules, 0 errors | Tests: 6/6 pass | CSS: 26.67 kB, JS: 227.35 kB
+### useStyleMemory.js (DONE)
+- Tracks brands/categories/colors from saves (positive) and regenerations (negative)
+- Weighted signals from ratings (4-5★ = strong positive, 1-2★ = negative)
+- getPreferences() → UserPreferences-compatible object (preferredBrands, preferredCategories, excludedCategories)
+- getSummary() → human-readable profile text for styleGoal injection
+- localStorage key: `fashiongpt_style_memory`
 
-## Key Architecture Facts
-- `useOutfitGenerator` calls `generateOutfit()` from `outfitGenerator.ts`
-- `generateOutfit()` calls `handleRequest()` from orchestrator with `type: 'build_outfit'`
-- 4 agents run: ProfileAgent → WardrobeAgent → OutfitAgent → CriticAgent
-- Anthropic API calls happen inside each agent (TypeScript files in `src/agents/`)
-- Results are structured: `outfit.items[]`, `critique.scores{}`, `reasoning`, `agentTraces[]`
-- Two independent localStorage keys: `fashiongpt_session` (memory) and `fashiongpt_saved_outfits` (saved)
+### StyleMemoryContext.jsx (DONE)
+- React context provider, consumer hook (useStyleMemoryContext)
 
-## Relevant Files
-- `src/services/outfitGenerator.ts` — Main entry point for generation (298 lines)
-- `src/hooks/useOutfitGenerator.js` — React hook wrapper
-- `src/components/OutfitGenerator.jsx` — UI flow
-- `src/components/Discovery.jsx` — Curated looks with Try This Look
-- `src/hooks/useMemory.js` — Session memory
-- `src/hooks/SavedOutfitsContext.jsx` — Shared saved outfits state
+### Pending: Wire into App.jsx & OutfitGenerator.jsx
+- Add StyleMemoryProvider in App
+- Pass styleMem context to OutfitGenerator
+- On save: recordSave(result, occasionId, archetypeId)
+- On rate: recordRate(result, rating)
+- On regenerate: recordRegenerate(oldResult)
+- Before generate: inject getPreferences() + getSummary() into payload
+
+## Files Changed
+- `src/hooks/useStyleMemory.js` (NEW — 225 lines)
+- `src/hooks/StyleMemoryContext.jsx` (NEW — 42 lines)
+- `src/App.jsx` (TBD)
+- `src/components/OutfitGenerator.jsx` (TBD)
+
+## Relevant Architecture
+- `useOutfitGenerator.generate({occasion, budget, archetypeId, styleGoal, preferredCategories})` calls `outfitGenerator.ts` → orchestrator
+- `SavedOutfit.result.outfit.items[]` — each item has brand, cat, color, price
+- `OutfitGenerator` has handleSave, handleRate, handleRegenerate — these are where we hook style memory
+- Two providers pattern: `<SavedOutfitsProvider>` and `<StyleMemoryProvider>` wrap tab content

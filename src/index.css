@@ -175,6 +175,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .skeleton-line { height: 12px; width: 60%; margin-bottom: 12px; background: var(--border); border-radius: 6px; animation: skeleton-pulse 1.5s ease-in-out infinite; }
 .skeleton-block { height: 120px; width: 100%; background: var(--border); border-radius: 8px; animation: skeleton-pulse 1.5s ease-in-out infinite; }
 .og-skeleton { padding: 20px 0; }
+.og-personalized-badge { display: inline-block; font-size: 9px; font-weight: 500; color: var(--accent); background: rgba(201,130,107,0.1); border: 1px solid rgba(201,130,107,0.25); border-radius: 10px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; letter-spacing: 0.2px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    OUTFIT GENERATOR

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
+import { useStyleMemoryContext } from '../hooks/StyleMemoryContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
 
@@ -11,6 +12,7 @@ function SavedLooks() {
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'rated' | 'unrated'
   const { savedOutfits, removeOutfit, rateOutfit } = useSavedOutfitsContext();
+  const styleMem = useStyleMemoryContext();
 
   // Filter
   const filtered = savedOutfits.filter(o => {
@@ -95,7 +97,7 @@ function SavedLooks() {
                   outfit={o.result?.outfit}
                   showActions
                   rating={o.rating}
-                  onRate={(r) => rateOutfit(o.id, r)}
+                  onRate={(r) => { rateOutfit(o.id, r); styleMem?.recordRate(o.result, r); }}
                   onRemove={() => removeOutfit(o.id)}
                 />
 

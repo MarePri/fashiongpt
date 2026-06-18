@@ -16,6 +16,7 @@ import useCapsuleWardrobe from "./hooks/useCapsuleWardrobe.js";
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
+import { StyleMemoryProvider } from "./hooks/StyleMemoryContext.jsx";
 
 // ─── Components (lazy — code-split by tab) ──────────────────────────────────
 const OutfitGenerator = lazy(() => import("./components/OutfitGenerator.jsx"));
@@ -75,11 +76,13 @@ export default function FashionGPT() {
       </div>
 
       <Suspense fallback={<TabFallback />}>
+        <StyleMemoryProvider>
         <SavedOutfitsProvider>
           {tab === "outfit" && <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />}
           {tab === "looks" && <SavedLooks />}
           {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } }); setTryLookNonce(c => c + 1); handleTabChange('outfit'); }} />}
         </SavedOutfitsProvider>
+        </StyleMemoryProvider>
 
         {tab === "chat" && (
           <ChatPanel
