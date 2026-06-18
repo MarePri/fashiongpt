@@ -1,63 +1,7 @@
 import { PRODUCTS } from '../data/products.js';
 import { extractBudget } from './budget.js';
 import { classifyOccasion, OCCASION_MAP } from '../data/occasionMap.js';
-
-// ─── COLOR HARMONY ────────────────────────────────────────────────────────────
-
-/**
- * Simple color harmony groups for scoring.
- * Colors within the same group are "harmonious" together.
- */
-const COLOR_GROUPS = {
-  neutrals: ['Black', 'White', 'Beige', 'Grey', 'Cream', 'Ivory', 'Ecru', 'Champagne', 'Tan', 'Sand', 'Camel'],
-  earths: ['Rust', 'Chocolate', 'Cognac', 'Brown', 'Charcoal', 'Slate'],
-  darks: ['Navy', 'Black', 'Charcoal', 'Chocolate', 'Slate'],
-  pastels: ['Blush', 'Dusty Pink', 'Cream', 'Ivory', 'Lavender', 'Mint'],
-  brights: ['Gold', 'Silver', 'Cobalt', 'Red', 'Yellow'],
-  naturals: ['Beige', 'Sand', 'Camel', 'White', 'Cream', 'Ecru', 'Tan'],
-  washing: ['White/Navy', 'Multicolor', 'Faded Black', 'Medium Wash', 'Light Wash', 'Washed Blue'],
-};
-
-/**
- * Get the harmony group(s) for a color name.
- * @param {string} color
- * @returns {string[]}
- */
-function getColorGroups(color) {
-  const groups = [];
-  for (const [groupName, colors] of Object.entries(COLOR_GROUPS)) {
-    if (colors.some(c => color.toLowerCase().includes(c.toLowerCase()))) {
-      groups.push(groupName);
-    }
-  }
-  return groups;
-}
-
-/**
- * Compute color harmony score between items.
- * Higher means more harmonious.
- * @param {import('../types/index.js').Product[]} items
- * @returns {number} 0–100
- */
-function computeColorHarmony(items) {
-  if (!items || items.length < 2) return 80;
-
-  const itemGroups = items.map(item => getColorGroups(item.color || ''));
-  let harmonyCount = 0;
-  let pairCount = 0;
-
-  for (let i = 0; i < itemGroups.length; i++) {
-    for (let j = i + 1; j < itemGroups.length; j++) {
-      pairCount++;
-      // Check if any group overlaps
-      const shared = itemGroups[i].some(g => itemGroups[j].includes(g));
-      if (shared) harmonyCount++;
-    }
-  }
-
-  if (pairCount === 0) return 80;
-  return Math.round(60 + (harmonyCount / pairCount) * 35); // 60–95 range
-}
+import { computeColorHarmony } from './colorHarmony';
 
 // ─── SCORING ───────────────────────────────────────────────────────────────────
 

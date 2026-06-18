@@ -60,7 +60,26 @@ function ChatPanel({ messages, input, loading, setInput, sendMessage, prompts, c
             placeholder="Describe your occasion, mood, or goal…"
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            onKeyDown={e => {
+              // Enter (alone) → send
+              if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+              // Cmd/Ctrl+Enter → send (alternative)
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                sendMessage();
+              }
+              // Esc → clear input or blur textarea
+              if (e.key === 'Escape') {
+                if (input) {
+                  setInput('');
+                } else {
+                  e.target.blur();
+                }
+              }
+            }}
           />
           <button className="chat-send" disabled={!input.trim() || loading} onClick={() => sendMessage()}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z" /></svg>

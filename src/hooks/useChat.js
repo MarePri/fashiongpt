@@ -11,6 +11,17 @@ export default function useChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
+  const abortRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  // Track mount state and abort in-flight requests on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -19,6 +30,12 @@ export default function useChat() {
   const sendMessage = useCallback(async (text) => {
     const msg = text || input.trim();
     if (!msg) return;
+
+    // Abort any in-flight request before starting a new one
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
@@ -40,7 +57,9 @@ Rules:
 - Keep responses under 200 words but make them feel rich and considered
 - Never be generic. Always be specific to their request.`;
 
-      const reply = await callAI(system, msg);
+      const reply = await callAI(system, msg, 900, controller.signal);
+      if (controller.signal.aborted || !mountedRef.current) return;
+
       const wantsOutfit =
         msg.toLowerCase().includes('outfit') ||
         msg.toLowerCase().includes('wear') ||
@@ -54,13 +73,19 @@ Rules:
         outfit.why = 'Curated by FashionGPT based on your request';
       }
       setMessages(prev => [...prev, { role: 'ai', content: reply, outfit }]);
-    } catch {
+    } catch (err) {
+      if (!mountedRef.current) return;
+      const suggestion = err?.message?.includes('fetch') || err?.message?.includes('NetworkError')
+        ? 'Check your internet connection. If the issue persists, the AI service may be unavailable.'
+        : err?.message?.includes('401') || err?.message?.includes('403')
+        ? 'API key issue. Check your .env file has a valid API key.'
+        : 'Something went wrong. Check your API key in .env or try again later.';
       setMessages(prev => [
         ...prev,
-        { role: 'ai', content: 'Something went wrong. Try again!', outfit: null },
+        { role: 'ai', content: `⚠️ ${suggestion}`, outfit: null },
       ]);
     }
-    setLoading(false);
+    if (mountedRef.current) setLoading(false);
   }, [input]);
 
   return { messages, input, loading, setInput, sendMessage, chatEndRef };

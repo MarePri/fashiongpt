@@ -26,9 +26,10 @@ function validateResponse(data, expectedType) {
  * @param {string} systemPrompt
  * @param {string} userMessage
  * @param {number} [maxTokens=900]
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
  * @returns {Promise<string>}
  */
-export async function callAI(systemPrompt, userMessage, maxTokens = 900) {
+export async function callAI(systemPrompt, userMessage, maxTokens = 900, signal = undefined) {
   if (isOfflineMode()) {
     return generateOfflineChatResponse(userMessage);
   }
@@ -44,11 +45,15 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 900) {
     }
 
     try {
-      const response = await fetch(`${API_PROXY_URL}/api/chat`, {
+      const fetchOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ systemPrompt, userMessage, maxTokens }),
-      });
+      };
+      if (signal) {
+        fetchOptions.signal = signal;
+      }
+      const response = await fetch(`${API_PROXY_URL}/api/chat`, fetchOptions);
 
       if (!response.ok) {
         const errText = await response.text().catch(() => 'Unknown error');
@@ -106,9 +111,10 @@ export function parseAIJSON(text) {
 /**
  * Generate a fashion DNA analysis with response validation.
  * @param {import('../types/index.js').Archetype} archetype
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
  * @returns {Promise<Object>}
  */
-export async function getFashionDNA(archetype) {
+export async function getFashionDNA(archetype, signal = undefined) {
   if (isOfflineMode()) {
     return generateOfflineDNA(archetype);
   }
@@ -116,7 +122,7 @@ export async function getFashionDNA(archetype) {
   try {
     const system = `You are FashionGPT. Return ONLY valid JSON, no markdown.
     Format: {"headline":"[punchy 1-liner about their style]","missing":"[1 key item they should add]","trend_match":"[current trend that fits their DNA]","confidence":85}`;
-    const text = await callAI(system, `Fashion archetype: ${archetype.name}. ${archetype.desc}. Give a personal style assessment.`);
+    const text = await callAI(system, `Fashion archetype: ${archetype.name}. ${archetype.desc}. Give a personal style assessment.`, undefined, signal);
     const parsed = parseAIJSON(text);
     if (parsed && parsed.headline && parsed.missing && parsed.trend_match) {
       return parsed;

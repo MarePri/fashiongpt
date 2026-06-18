@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { generateOutfit } from '../services/outfitGenerator.ts';
 
 /**
@@ -14,6 +14,17 @@ export default function useOutfitGenerator() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const abortRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  // Track mount state and abort on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   /**
    * Run the full outfit generation pipeline.
@@ -32,6 +43,11 @@ export default function useOutfitGenerator() {
       return null;
     }
 
+    // Abort any in-flight request before starting a new one
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -45,14 +61,16 @@ export default function useOutfitGenerator() {
         weather: input.weather,
         preferredCategories: input.preferredCategories,
       });
+      if (controller.signal.aborted || !mountedRef.current) return null;
       setResult(output);
       return output;
     } catch (err) {
+      if (!mountedRef.current) return null;
       const msg = err instanceof Error ? err.message : String(err);
       setError(new Error(msg));
       return null;
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 

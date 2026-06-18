@@ -1,14 +1,31 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { PRODUCTS } from '../data/products.js';
 
 /**
  * Hook managing capsule wardrobe state and logic.
+ *
+ * Uses a buildingRef guard to prevent race conditions from rapid
+ * double-clicks or concurrent buildCapsule calls.
  */
 export default function useCapsuleWardrobe() {
   const [capsuleResult, setCapsuleResult] = useState(null);
   const [capsuleLoading, setCapsuleLoading] = useState(false);
+  const mountedRef = useRef(true);
+  const buildingRef = useRef(false);
+
+  // Track mount state and prevent setState on unmounted component
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const buildCapsule = useCallback(() => {
+    // Guard: prevent concurrent invocations from rapid clicks
+    if (buildingRef.current) return;
+    buildingRef.current = true;
+
     setCapsuleResult(null);
     setCapsuleLoading(true);
     try {
@@ -26,15 +43,18 @@ export default function useCapsuleWardrobe() {
       ].filter(Boolean);
       const total = picks.reduce((s, p) => s + p.price, 0);
       const combos = Math.floor(picks.length * (picks.length - 1) * 1.4);
-      setCapsuleResult({ picks, total, combos });
+      if (mountedRef.current) setCapsuleResult({ picks, total, combos });
     } catch {
-      setCapsuleLoading(false);
+      // On error, omit result (capsuleResult stays null)
+    } finally {
+      if (mountedRef.current) setCapsuleLoading(false);
+      buildingRef.current = false;
     }
-    setCapsuleLoading(false);
   }, []);
 
   const reset = useCallback(() => {
     setCapsuleResult(null);
+    // Don't reset buildingRef — let any in-flight complete naturally
   }, []);
 
   return { capsuleResult, capsuleLoading, buildCapsule, reset };

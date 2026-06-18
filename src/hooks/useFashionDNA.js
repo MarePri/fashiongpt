@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { getFashionDNA } from '../services/ai.js';
 
 /**
@@ -8,18 +8,36 @@ export default function useFashionDNA() {
   const [selectedArchetype, setSelectedArchetype] = useState(null);
   const [dnaResult, setDnaResult] = useState(null);
   const [dnaLoading, setDnaLoading] = useState(false);
+  const abortRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  // Track mount state and abort in-flight requests on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   const buildFashionDNA = useCallback(async (archetype) => {
+    // Abort any in-flight request before starting a new one
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setSelectedArchetype(archetype.id);
     setDnaResult(null);
     setDnaLoading(true);
     try {
-      const meta = await getFashionDNA(archetype);
+      const meta = await getFashionDNA(archetype, controller.signal);
+      if (controller.signal.aborted || !mountedRef.current) return;
       setDnaResult({ archetype, meta });
     } catch {
+      if (!mountedRef.current) return;
       setDnaResult(null);
     }
-    setDnaLoading(false);
+    if (mountedRef.current) setDnaLoading(false);
   }, []);
 
   const reset = useCallback(() => {

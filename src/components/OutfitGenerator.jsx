@@ -8,6 +8,7 @@ import GeneratingAnimation from './GeneratingAnimation.jsx';
 import { OCCASIONS } from '../data/occasions.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { OutfitSkeleton } from './Skeleton.jsx';
+import WeatherWidget from './WeatherWidget.jsx';
 
 /**
  * OutfitGenerator — Multi-step structured outfit generation.
@@ -107,7 +108,11 @@ export default function OutfitGenerator({ memory }) {
 
     if (results.length === 0) {
       setStep('error');
-      errorRef.current = 'Could not generate outfits. Try again with different choices.';
+      // Collect actual error messages from caught promise rejections
+      const errMessages = results.filter(r => r === null).length;
+      errorRef.current = errMessages > 0
+        ? 'All generation attempts failed. The AI service may be temporarily unavailable.'
+        : 'Could not generate outfits. Try again with different choices.';
       return;
     }
 
@@ -322,6 +327,9 @@ export default function OutfitGenerator({ memory }) {
           </div>
         </div>
 
+        {/* Weather context */}
+        <WeatherWidget />
+
         {/* Generate button */}
         <button
           className="btn-primary og-generate-btn"
@@ -343,12 +351,21 @@ export default function OutfitGenerator({ memory }) {
   // ─── Step: ERROR ─────────────────────────────────────────────────────────
 
   if (step === 'error') {
+    const isNetworkError = errorRef.current?.includes('fetch') || errorRef.current?.includes('network') || errorRef.current?.includes('NetworkError');
+    const isApiError = errorRef.current?.includes('API') || errorRef.current?.includes('key') || errorRef.current?.includes('401') || errorRef.current?.includes('403');
+    const suggestion = isNetworkError
+      ? 'This usually means the AI service is unreachable. Check your internet or API proxy.'
+      : isApiError
+      ? 'Check that your API key is correctly set in the .env file.'
+      : 'Try different occasion or style choices and generate again.';
+
     return (
       <div className="section-pad outfit-gen">
         <div className="og-error">
           <div className="og-error-icon">⚠️</div>
-          <div className="og-error-title">Something went wrong</div>
-          <div className="og-error-msg">{errorRef.current || 'Generation failed. Please try again.'}</div>
+          <div className="og-error-title">Generation Failed</div>
+          <div className="og-error-msg">{errorRef.current || 'Could not generate outfits.'}</div>
+          <div className="og-error-suggestion">{suggestion}</div>
           <button className="btn-primary" onClick={() => setStep('input')}>
             Try Again
           </button>
