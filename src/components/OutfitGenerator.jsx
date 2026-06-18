@@ -82,8 +82,8 @@ export default function OutfitGenerator({ memory }) {
     const promises = [0, 1, 2].map((i) => {
       const variationLabel = styleVariations[i]?.label || 'Versatile';
       const variationGoal = memSummary
-        ? `A ${variationLabel.toLowerCase()} look for ${occasionText}. ${memSummary}`
-        : `A ${variationLabel.toLowerCase()} look for ${occasionText}`;
+        ? `${variationLabel} look for ${occasionText}. ${memSummary}`
+        : `${variationLabel} look for ${occasionText}`;
       return generator
         .generate({
           occasion: occasionText,
@@ -142,7 +142,7 @@ export default function OutfitGenerator({ memory }) {
         occasion: occasionText,
         budget: budgetNum,
         archetypeId: styleVariations[index]?.id || undefined,
-        styleGoal: `A ${styleVariations[index]?.label || 'versatile'} look`,
+        styleGoal: `${styleVariations[index]?.label || 'Versatile'} look`,
       });
       if (result) {
         setLooks(prev => {
@@ -173,7 +173,8 @@ export default function OutfitGenerator({ memory }) {
     const memSummary = styleMem?.getSummary() || '';
 
     try {
-      const baseGoal = `A ${(styleVariations[index]?.label || 'versatile').toLowerCase()} look for ${occasionText}`;
+      const variationLabel = styleVariations[index]?.label || 'Versatile';
+      const baseGoal = `${variationLabel} look for ${occasionText}`;
       const feedbackSuffix = `User feedback: ${feedback.trim()}`;
       const fullGoal = memSummary
         ? `${baseGoal}. ${memSummary} ${feedbackSuffix}`

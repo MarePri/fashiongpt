@@ -65,14 +65,16 @@ function pickAffordable(
   );
   if (candidates.length === 0) return null;
 
-  // Score by style tag overlap + trendiness
+  // Score by style tag overlap + trendiness + small random jitter
   const scored = candidates.map(p => {
     const overlap = p.style.filter(s =>
       styleTags.some(t => t.toLowerCase() === s.toLowerCase())
     ).length;
+    // Jitter (±5) ensures variety between generations while favoring best matches
+    const jitter = (Math.random() - 0.5) * 10;
     return {
       product: p,
-      score: overlap * 15 + (p.trend || 50) - p.price * 0.1,
+      score: overlap * 15 + (p.trend || 50) - p.price * 0.1 + jitter,
     };
   });
 
