@@ -38,7 +38,7 @@ const TABS = [
 export default function FashionGPT() {
   const memory = useMemory();
   const [tab, setTab] = useState(() => memory.data.lastTab || "outfit");
-  const [presetArchetype, setPresetArchetype] = useState(null);
+  const [tryLookNonce, setTryLookNonce] = useState(0);
 
   // Persist tab changes to memory
   const handleTabChange = (nextTab) => {
@@ -58,9 +58,9 @@ export default function FashionGPT() {
       </div>
 
       <SavedOutfitsProvider>
-        {tab === "outfit" && <OutfitGenerator memory={memory} presetArchetype={presetArchetype} />}
+        {tab === "outfit" && <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />}
         {tab === "looks" && <SavedLooks />}
-        {tab === "discover" && <Discovery onTryLook={(archId) => { setPresetArchetype(archId); handleTabChange('outfit'); }} />}
+        {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } }); setTryLookNonce(c => c + 1); handleTabChange('outfit'); }} />}
       </SavedOutfitsProvider>
 
       {tab === "chat" && (

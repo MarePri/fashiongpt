@@ -273,19 +273,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .og-critic-toggle:hover { border-color: var(--accent); }
 .og-toggle-arrow { font-size: 10px; color: var(--muted); }
 
-/* Meta bar */
-.og-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding: 10px 0; }
-.og-meta-item { font-size: 11px; color: var(--muted); }
-.og-meta-item.og-approved { color: var(--up); font-weight: 600; }
-
-/* Agent traces */
-.og-traces { margin-top: 8px; }
-.og-traces-summary { font-size: 10px; color: var(--muted); cursor: pointer; padding: 6px 0; }
-.og-traces-list { display: flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--card); border-radius: 8px; margin-top: 4px; }
-.og-trace-item { display: flex; gap: 12px; font-size: 10px; font-family: monospace; color: var(--muted); }
-.og-trace-item.ok span:last-child { color: var(--up); }
-.og-trace-item.fail span:last-child { color: var(--down); }
-
 /* Bottom actions */
 .og-bottom-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
 .og-saved-count { font-size: 11px; color: var(--muted); }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
@@ -18,13 +18,13 @@ import { OutfitSkeleton } from './Skeleton.jsx';
  *   memory — useMemory hook (optional) for session persistence
  *   presetArchetype — archetype ID from Discovery (higher priority than memory)
  */
-export default function OutfitGenerator({ memory, presetArchetype }) {
+export default function OutfitGenerator({ memory }) {
   const generator = useOutfitGenerator();
   const saved = useSavedOutfitsContext();
 
-  // Restore inputs from session memory (presetArchetype from Discovery takes priority)
+  // Restore inputs from session memory
   const initialOccasion = memory?.data?.lastInputs?.occasion || null;
-  const initialArchetype = presetArchetype || memory?.data?.lastInputs?.archetype || null;
+  const initialArchetype = memory?.data?.lastInputs?.archetype || null;
   const initialBudget = memory?.data?.lastInputs?.budget || '';
 
   // If returning with previous results, show them immediately
@@ -34,15 +34,6 @@ export default function OutfitGenerator({ memory, presetArchetype }) {
   const [selectedOccasion, setSelectedOccasion] = useState(initialOccasion);
   const [selectedArchetype, setSelectedArchetype] = useState(initialArchetype);
   const [budget, setBudget] = useState(initialBudget);
-
-  // Consume presetArchetype from Discovery — save to memory, clear the prop
-  const consumedPreset = useRef(false);
-  React.useEffect(() => {
-    if (presetArchetype && memory && !consumedPreset.current) {
-      consumedPreset.current = true;
-      memory.save({ lastInputs: { ...(memory.data.lastInputs || {}), archetype: presetArchetype } });
-    }
-  }, [presetArchetype, memory]);
   const [looks, setLooks] = useState(() => {
     if (memory?.data?.lastResults && memory.isReturning) {
       return memory.data.lastResults;
@@ -355,14 +346,6 @@ export default function OutfitGenerator({ memory, presetArchetype }) {
               />
             )}
           </div>
-
-          {/* Generation details */}
-          <div className="og-meta">
-            <span className="og-meta-item">✦ Confidence: {activeLook.confidenceScore}%</span>
-            <span className="og-meta-item">⏱ {activeLook.duration > 1000 ? `${(activeLook.duration / 1000).toFixed(1)}s` : `${activeLook.duration}ms`}</span>
-            {activeLook.approved && <span className="og-meta-item og-approved">✓ Critic Approved</span>}
-          </div>
-
 
         </div>
       )}
