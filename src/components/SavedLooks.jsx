@@ -3,6 +3,7 @@ import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import { useStyleMemoryContext } from '../hooks/StyleMemoryContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
+import StyleMemoryPanel from './StyleMemoryPanel.jsx';
 
 /**
  * SavedLooks — displays user's saved outfits with rating and removal.
@@ -34,6 +35,11 @@ function SavedLooks() {
         {savedOutfits.length > 0
           ? `${savedOutfits.length} looks saved`
           : 'Save outfits to build your collection'}
+      </div>
+
+      {/* Visible Style Memory */}
+      <div className="sl-memory-section">
+        <StyleMemoryPanel />
       </div>
 
       {savedOutfits.length === 0 ? (

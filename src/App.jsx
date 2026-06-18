@@ -15,6 +15,7 @@ import useCapsuleWardrobe from "./hooks/useCapsuleWardrobe.js";
 // ─── Components (static — always visible) ───────────────────────────────────
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
+import HomeScreen from "./components/HomeScreen.jsx";
 import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
 import { StyleMemoryProvider } from "./hooks/StyleMemoryContext.jsx";
 
@@ -27,8 +28,9 @@ const FashionDNA = lazy(() => import("./components/FashionDNA.jsx"));
 const TrendsRadar = lazy(() => import("./components/TrendsRadar.jsx"));
 const CapsuleWardrobe = lazy(() => import("./components/CapsuleWardrobe.jsx"));
 
-// ─── TABS ─────────────────────────────────────────────────────────────────────
+// ─── TABS — Home is first (the magic landing screen) ─────────────────────────
 const TABS = [
+  { id: "home", icon: "🏠", label: "Home" },
   { id: "outfit", icon: "✨", label: "Outfit" },
   { id: "looks", icon: "❤️", label: "Saved" },
   { id: "discover", icon: "🌍", label: "Discover" },
@@ -55,7 +57,7 @@ function TabFallback() {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function FashionGPT() {
   const memory = useMemory();
-  const [tab, setTab] = useState(() => memory.data.lastTab || "outfit");
+  const [tab, setTab] = useState(() => memory.data.lastTab || "home");
   const [tryLookNonce, setTryLookNonce] = useState(0);
 
   // Persist tab changes to memory
@@ -75,14 +77,21 @@ export default function FashionGPT() {
         <Sidebar tabs={TABS} activeTab={tab} onTabChange={handleTabChange} />
       </div>
 
+      <StyleMemoryProvider>
+      <SavedOutfitsProvider>
       <Suspense fallback={<TabFallback />}>
-        <StyleMemoryProvider>
-        <SavedOutfitsProvider>
-          {tab === "outfit" && <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />}
-          {tab === "looks" && <SavedLooks />}
-          {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } }); setTryLookNonce(c => c + 1); handleTabChange('outfit'); }} />}
-        </SavedOutfitsProvider>
-        </StyleMemoryProvider>
+        {/* HOME — Personal Stylist Dashboard */}
+        {tab === "home" && (
+          <HomeScreen
+            memory={memory}
+            dna={dna}
+            onNavigate={handleTabChange}
+          />
+        )}
+
+        {tab === "outfit" && <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />}
+        {tab === "looks" && <SavedLooks />}
+        {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } }); setTryLookNonce(c => c + 1); handleTabChange('outfit'); }} />}
 
         {tab === "chat" && (
           <ChatPanel
@@ -118,6 +127,8 @@ export default function FashionGPT() {
           />
         )}
       </Suspense>
+      </SavedOutfitsProvider>
+      </StyleMemoryProvider>
     </div>
   );
 }
