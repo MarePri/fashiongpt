@@ -64,25 +64,29 @@ export default function OutfitGenerator({ memory }) {
     const occasionObj = OCCASIONS.find(o => o.id === selectedOccasion);
     const occasionText = occasionObj ? `${occasionObj.label} — ${occasionObj.vibe}` : selectedOccasion;
     const budgetNum = budget ? parseFloat(budget) : null;
-    const results = [];
 
-    // Generate 3 looks with varying style parameters
-    for (let i = 0; i < 3; i++) {
-      try {
-        const styleGoal = styleVariations[i]?.label || 'Versatile';
-        const result = await generator.generate({
+    // Generate 3 looks IN PARALLEL — ~3× faster than sequential
+    const promises = [0, 1, 2].map((i) => {
+      const styleGoal = styleVariations[i]?.label || 'Versatile';
+      return generator
+        .generate({
           occasion: occasionText,
           budget: budgetNum,
           archetypeId: styleVariations[i]?.id || undefined,
           styleGoal: `A ${styleGoal.toLowerCase()} look for ${occasionText}`,
+        })
+        .then((result) =>
+          result
+            ? { ...result, variationIndex: i, variationLabel: styleVariations[i]?.label || 'Look' }
+            : null
+        )
+        .catch((err) => {
+          console.warn(`[OutfitGenerator] Look ${i + 1} failed:`, err);
+          return null;
         });
-        if (result) {
-          results.push({ ...result, variationIndex: i, variationLabel: styleVariations[i]?.label || 'Look' });
-        }
-      } catch (err) {
-        console.warn(`[OutfitGenerator] Look ${i + 1} failed:`, err);
-      }
-    }
+    });
+
+    const results = (await Promise.all(promises)).filter(Boolean);
 
     if (results.length === 0) {
       setStep('error');
