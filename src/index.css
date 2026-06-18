@@ -212,14 +212,43 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 /* Generate button */
 .og-generate-btn { margin-top: 12px; }
 
-/* Generating state */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GENERATING ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .og-generating { text-align: center; padding: 40px 0; }
-.og-generating-icon { font-size: 36px; margin-bottom: 12px; animation: pulse 2s ease-in-out infinite; }
-.og-generating-title { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 6px; }
-.og-generating-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
-.og-generating-bar-track { height: 3px; background: var(--surface); border-radius: 3px; margin-bottom: 32px; overflow: hidden; }
-.og-generating-bar-fill { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; animation: loading-bar 2s ease-in-out infinite; width: 30%; }
-@keyframes loading-bar { 0% { transform: translateX(-100%); width: 30%; } 50% { width: 50%; } 100% { transform: translateX(400%); width: 30%; } }
+
+/* Animated fashion icon */
+.og-gen-icon { font-size: 42px; margin-bottom: 12px; animation: genIconBounce 0.6s ease-in-out infinite alternate; filter: drop-shadow(0 2px 8px rgba(201,130,107,0.3)); }
+@keyframes genIconBounce { from { transform: translateY(-4px) scale(1); } to { transform: translateY(4px) scale(1.05); } }
+
+.og-generating-title { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 20px; }
+
+/* Agent pipeline stages */
+.og-gen-stages { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.og-gen-stage { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); transition: all 0.4s ease; font-size: 11px; }
+.og-gen-stage.done { border-color: var(--accent2); background: rgba(148,186,168,0.1); color: var(--accent2); }
+.og-gen-stage.active { border-color: var(--accent); background: rgba(201,130,107,0.1); color: var(--accent); animation: stagePulse 1.5s ease-in-out infinite; }
+.og-gen-stage.pending { opacity: 0.4; }
+@keyframes stagePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201,130,107,0.2); } 50% { box-shadow: 0 0 0 6px rgba(201,130,107,0); } }
+.og-gen-stage-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; background: var(--card); border: 1px solid var(--border); }
+.og-gen-stage.done .og-gen-stage-dot { background: var(--accent2); border-color: var(--accent2); color: white; }
+.og-gen-stage.active .og-gen-stage-dot { background: var(--accent); border-color: var(--accent); color: white; }
+.og-gen-stage-label { white-space: nowrap; }
+
+/* Current status */
+.og-gen-status { font-size: 12px; color: var(--muted); margin-bottom: 16px; animation: fadeInOut 2s ease-in-out infinite; }
+@keyframes fadeInOut { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+/* Breathing progress bar */
+.og-gen-bar-track { height: 3px; background: var(--surface); border-radius: 3px; margin-bottom: 24px; overflow: hidden; }
+.og-gen-bar-fill { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; transition: width 0.3s ease; }
+
+/* Rotating style tip */
+.og-gen-tip { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; animation: fadeIn 0.5s ease; }
+.og-gen-tip-icon { font-size: 14px; }
+.og-gen-tip-text { font-size: 11px; color: var(--muted); font-style: italic; max-width: 320px; line-height: 1.5; }
+
 .og-generating-looks { display: flex; flex-direction: column; gap: 16px; }
 
 /* Results header */

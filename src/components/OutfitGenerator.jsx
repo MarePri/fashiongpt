@@ -3,6 +3,7 @@ import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
+import GeneratingAnimation from './GeneratingAnimation.jsx';
 import { OCCASIONS } from '../data/occasions.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { OutfitSkeleton } from './Skeleton.jsx';
@@ -269,23 +270,7 @@ export default function OutfitGenerator({ memory }) {
   // ─── Step: GENERATING ────────────────────────────────────────────────────
 
   if (step === 'generating') {
-    return (
-      <div className="section-pad outfit-gen">
-        <div className="og-generating">
-          <div className="og-generating-icon">✦</div>
-          <div className="og-generating-title">Creating your looks</div>
-          <div className="og-generating-sub">Analyzing occasion, weather, and trends…</div>
-          <div className="og-generating-bar-track">
-            <div className="og-generating-bar-fill" />
-          </div>
-          <div className="og-generating-looks">
-            <OutfitSkeleton />
-            <OutfitSkeleton />
-            <OutfitSkeleton />
-          </div>
-        </div>
-      </div>
-    );
+    return <GeneratingAnimation />;
   }
 
   // ─── Step: ERROR ─────────────────────────────────────────────────────────
