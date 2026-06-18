@@ -426,3 +426,22 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .disc-try-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,130,107,0.3); }
 
 .disc-empty { font-size: 11px; color: var(--muted); padding: 12px 0; }
+
+/* ─── StyleCoach: Iterative Refinement ──────────────── */
+.og-refine-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.og-refine-toggle { width: 100%; background: linear-gradient(135deg, rgba(201,130,107,0.08), rgba(201,130,107,0.15)); border: 1.5px dashed var(--accent); border-radius: 10px; padding: 10px 12px; font-size: 12px; font-weight: 500; color: var(--accent); cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.og-refine-toggle:hover { background: linear-gradient(135deg, rgba(201,130,107,0.15), rgba(201,130,107,0.25)); transform: translateY(-1px); }
+.og-refine-form { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.og-refine-input { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.2s; box-sizing: border-box; }
+.og-refine-input:focus { border-color: var(--accent); }
+.og-refine-input::placeholder { color: var(--muted); }
+.og-refine-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.og-refine-submit { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 11px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+.og-refine-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.og-refine-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,130,107,0.3); }
+.og-refine-cancel { background: transparent; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 11px; color: var(--muted); cursor: pointer; font-family: 'Inter', sans-serif; }
+.og-refine-cancel:hover { border-color: var(--text); color: var(--text); }
+.og-refine-box { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.og-refine-spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: ogSpin 0.6s linear infinite; }
+@keyframes ogSpin { to { transform: rotate(360deg); } }
+.og-refine-label { font-size: 11px; color: var(--muted); }

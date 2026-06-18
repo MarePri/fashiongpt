@@ -1,65 +1,74 @@
-# FashionGPT — Project Context
+# Project Context
 
 ## Environment
-- **Runtime:** Vite 5 + React 18 (Browser SPA), TS + JS
-- **Build:** `npm run build` → vite build (75 modules, ~2s, 0 errors)
-- **Test:** `npm test` → vitest run (6 tests, all pass)
-- **TypeScript:** `tsc --noEmit` → 0 errors
-- **Deps:** react, react-dom, @supabase/supabase-js, vitest, jsdom
+- Language: JavaScript (React) + TypeScript (Agents)
+- Runtime: Node.js, Vite 5.4
+- Build: `npm run build` (vite build, 75 modules, 0 errors)
+- Test: `npm test` (vitest, jsdom env, 6 tests pass)
+- Package Manager: npm
 
-## Commit Log (this session)
-```
-5291749  →  Discovery screen CSS
-9b75ccc  →  Discovery tab wiring in App.jsx
-a29a552  →  Discovery.jsx component (curated looks per archetype)
-ac561bc  →  Animated generating screen (icon cycle, agent stages, tips)
-2ba8797  →  Real-time saved sync (SavedOutfitsContext)
-401009f  →  Parallel generation (Promise.all, 3× speedup)
-28743fc  →  vitest + useMemory unit tests
-9960c61  →  Memory persistence (useMemory, tab/input restore, banner)
-ddc6d10  →  Outfit Experience (generator, critic, saved looks, card, tabs)
-```
+## Project Type
+- [x] Application (Web/React SPA — fashion styling assistant)
+- Infrastructure: None (static SPA, client-side Anthropic API calls)
 
-## All Phases Complete ✅
+## Structure
+- Source: `src/`
+  - `components/` — React components
+  - `hooks/` — Custom hooks (useMemory, useSavedOutfits, useOutfitGenerator)
+  - `services/` — Business logic (outfitGenerator.ts, weather.ts)
+  - `agents/` — Agent pipeline (ProfileAgent→WardrobeAgent→OutfitAgent→CriticAgent via orchestrator.ts)
+  - `data/` — Static data (archetypes.js, products.js, occasionMap.js, trends.js)
+  - `utils/` — Helpers (outfit.js)
+  - `db/` — Database layer (not connected to UI)
+  - `server/` — Express server (not used in current flow)
+- Tests: `src/hooks/__tests__/useMemory.test.js` (6 tests)
+- Entry: `src/App.jsx`
 
-| Phase | Feature | Status |
-|:------|:--------|:-------|
-| **1** | **The Outfit Experience** — OutfitGenerator, CriticScore, SavedLooks, enhanced OutfitCard, tab restructure | ✅ `ddc6d10` |
-| **2.1** | **Memory Persistence** — useMemory, tab/input restore, welcome-back banner, 6 unit tests | ✅ `9960c61` |
-| **2.2** | **Parallel Generation** — Promise.all for 3-look gen (~3× speedup) | ✅ `401009f` |
-| **2.3** | **Real-time Saved Sync** — SavedOutfitsContext lifts state to app level | ✅ `2ba8797` |
-| **2.4** | **Loading Animations** — GeneratingAnimation: cycling icons, agent stages pipeline, rotating style tips, breathing progress | ✅ `ac561bc` |
-| **2.5** | **Discovery Screen** — curated looks per archetype from product catalog, filter chips, color swatches, try-this-look button | ✅ `5291749` |
+## Current Status
+### Outfit Experience (Phase 1) — DELIVERED
+- `OutfitGenerator.jsx`: Multi-step flow (occasion → archetype → budget → generate → 3 results)
+- `CriticScore.jsx`: Score bars (4 categories), verdict, weather, suggestions, issues
+- `SavedLooks.jsx`: Collection with stats bar, filters, inline rate/remove, critic toggle
+- `OutfitCard.jsx`: Save heart, star rating, regenerate, remove buttons
+- Tab structure: Outfit (default), Saved, Discover, DNA, Trends, Chat, Capsule
 
-## Files Created/Modified This Session
+### Memory & Performance (Phase 2) — DELIVERED
+- `useMemory.js`: Session persistence (lastTab, lastInputs, lastResults, lastVisit, isReturning, recordGeneration)
+- `useMemory.test.js`: 6 unit tests (save/restore, merge, recordGeneration, clear, corrupt data)
+- `SavedOutfitsContext.jsx`: React context for cross-component outfit sync
+- Parallel generation: `Promise.all` for 3 looks (~3× speedup)
+- `GeneratingAnimation.jsx`: Cycle icons, agent stage pipeline, style tips, breathing progress bar
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/hooks/useMemory.js` | NEW | Session persistence (lastTab, lastInputs, lastResults, lastVisit) |
-| `src/hooks/useSavedOutfits.js` | EXISTING | LocalStorage persistence (save/rate/remove/isSaved) |
-| `src/hooks/SavedOutfitsContext.jsx` | NEW | React context wrapping useSavedOutfits for cross-tab sync |
-| `src/components/OutfitGenerator.jsx` | MODIFIED | Memory wiring, parallel gen, GeneratingAnimation |
-| `src/components/CriticScore.jsx` | NEW | Score breakdown with bars, weather, suggestions |
-| `src/components/SavedLooks.jsx` | NEW | Collection view, stats bar, filters, critic toggle |
-| `src/components/OutfitCard.jsx` | MODIFIED | Save/rate/regenerate actions, memo |
-| `src/components/GeneratingAnimation.jsx` | NEW | Animated loading: icons cycle, stage pipeline, tips |
-| `src/components/Discovery.jsx` | NEW | Curated looks by archetype, filter, try-this-look |
-| `src/App.jsx` | MODIFIED | 7 tabs (Outfit, Saved, Discover, DNA, Trends, Chat, Capsule), memory wiring, context provider |
-| `src/index.css` | MODIFIED | +500 lines: generator, critic, saved, banner, animation, discovery |
-| `src/hooks/__tests__/useMemory.test.js` | NEW | 6 unit tests for useMemory |
-| `vite.config.js` | MODIFIED | vitest + jsdom config |
-| `.opencode/context.md` | MODIFIED | This file |
+### Discovery Screen (Phase 2.5) — DELIVERED
+- `Discovery.jsx`: Curated looks per archetype from product catalog
+- Filter chips (All / Minimalist / Streetwear / Romantic / Professional)
+- Color swatches, item names/brands/prices, "Try This Look" button
 
-## Key Architecture
-- **Agent pipeline** (Profile→Wardrobe→Outfit→Critic) wired through UI via OutfitGenerator
-- **SavedOutfitsContext** provides shared React state for OutfitGenerator + SavedLooks tabs
-- **useMemory** persists session independently of saved outfits (lastTab, inputs, results)
-- **Discovery** uses static product data (no API calls) to show curated looks by archetype
+### Fixes Applied (commit 44f98c6)
+- Removed agent traces debug section
+- Removed og-meta div (confidence, duration, critic approved)
+- Removed unused CSS (og-meta, og-traces)
+- "Try This Look" now uses key-based remount (tryLookNonce → fresh OutfitGenerator mount)
 
-## Anti-Patterns (pre-existing)
-- Color harmony logic duplicated across `outfit.agent.ts`, `critic.agent.ts`, `utils/outfit.js`
-- Anthropic API key lives in client bundle (security risk for production)
+## Pending Tasks
+All Phase 2 items delivered. Ready for Phase 3.
 
-## Remaining Work
-- StyleCoach (iterative refine → regenerate feedback loop)
-- Any other Phase 3 items the user wants
+### Candidate: StyleCoach — Iterative Refinement
+- Feedback loop: user sees outfit → gives feedback → agents refine → shows revised version
+- Needs: `feedback` param in generateOutfit, feedback UI component, iteration state
+
+## Key Architecture Facts
+- `useOutfitGenerator` calls `generateOutfit()` from `outfitGenerator.ts`
+- `generateOutfit()` calls `handleRequest()` from orchestrator with `type: 'build_outfit'`
+- 4 agents run: ProfileAgent → WardrobeAgent → OutfitAgent → CriticAgent
+- Anthropic API calls happen inside each agent (TypeScript files in `src/agents/`)
+- Results are structured: `outfit.items[]`, `critique.scores{}`, `reasoning`, `agentTraces[]`
+- Two independent localStorage keys: `fashiongpt_session` (memory) and `fashiongpt_saved_outfits` (saved)
+
+## Relevant Files
+- `src/services/outfitGenerator.ts` — Main entry point for generation (298 lines)
+- `src/hooks/useOutfitGenerator.js` — React hook wrapper
+- `src/components/OutfitGenerator.jsx` — UI flow
+- `src/components/Discovery.jsx` — Curated looks with Try This Look
+- `src/hooks/useMemory.js` — Session memory
+- `src/hooks/SavedOutfitsContext.jsx` — Shared saved outfits state

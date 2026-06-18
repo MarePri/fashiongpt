@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
@@ -43,7 +43,12 @@ export default function OutfitGenerator({ memory }) {
   const [showBanner, setShowBanner] = useState(memory?.isReturning ?? false);
   const [expandedLook, setExpandedLook] = useState(null);
   const [activeVariation, setActiveVariation] = useState(0);
+  const [refiningIndex, setRefiningIndex] = useState(null);
+  const [feedbackText, setFeedbackText] = useState('');
   const errorRef = useRef(null);
+
+  // Close refine form when switching between looks
+  useEffect(() => { setRefiningIndex(null); }, [activeVariation]);
 
   // Archetypes for style variation (used for generating 3 different looks)
   const styleVariations = [
@@ -133,6 +138,39 @@ export default function OutfitGenerator({ memory }) {
       }
     } catch (err) {
       console.warn(`[OutfitGenerator] Regeneration ${index + 1} failed:`, err);
+    }
+  }, [selectedOccasion, selectedArchetype, budget, generator]);
+
+  /**
+   * Refine a look with user feedback — re-runs generation with feedback appended to styleGoal.
+   */
+  const handleRefine = useCallback(async (index, feedback) => {
+    if (!feedback.trim() || !selectedOccasion) return;
+    const occasionObj = OCCASIONS.find(o => o.id === selectedOccasion);
+    const occasionText = occasionObj ? `${occasionObj.label} — ${occasionObj.vibe}` : selectedOccasion;
+    const budgetNum = budget ? parseFloat(budget) : null;
+
+    setRefiningIndex(index);
+    setFeedbackText('');
+
+    try {
+      const result = await generator.generate({
+        occasion: occasionText,
+        budget: budgetNum,
+        archetypeId: styleVariations[index]?.id || undefined,
+        styleGoal: `A ${(styleVariations[index]?.label || 'versatile').toLowerCase()} look for ${occasionText}. User feedback: ${feedback.trim()}`,
+      });
+      if (result) {
+        setLooks(prev => {
+          const next = [...prev];
+          next[index] = { ...result, variationIndex: index, variationLabel: styleVariations[index]?.label || 'Look' };
+          return next;
+        });
+      }
+    } catch (err) {
+      console.warn(`[OutfitGenerator] Refine ${index + 1} failed:`, err);
+    } finally {
+      setRefiningIndex(null);
     }
   }, [selectedOccasion, selectedArchetype, budget, generator]);
 
@@ -347,6 +385,60 @@ export default function OutfitGenerator({ memory }) {
             )}
           </div>
 
+          {/* StyleCoach: Iterative Refinement */}
+          {refiningIndex === activeVariation ? (
+            <div className="og-refine-box">
+              <div className="og-refine-spinner" />
+              <span className="og-refine-label">Refining your look…</span>
+            </div>
+          ) : (
+            <div className="og-refine-section">
+              <button
+                className="og-refine-toggle"
+                onClick={() => {
+                  setRefiningIndex(-1); // will use -1 as "show input" sentinel
+                  setFeedbackText('');
+                }}
+              >
+                ✨ StyleCoach — Refine This Look
+              </button>
+              {refiningIndex === -1 && (
+                <div className="og-refine-form">
+                  <input
+                    className="og-refine-input"
+                    type="text"
+                    placeholder='e.g. "more colorful", "less formal", "add accessories"'
+                    value={feedbackText}
+                    onChange={e => setFeedbackText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        setRefiningIndex(null);
+                        handleRefine(activeVariation, feedbackText);
+                      }
+                      if (e.key === 'Escape') setRefiningIndex(null);
+                    }}
+                    autoFocus
+                  />
+                  <div className="og-refine-form-actions">
+                    <button
+                      className="og-refine-submit"
+                      disabled={!feedbackText.trim()}
+                      onClick={() => {
+                        const fb = feedbackText;
+                        setRefiningIndex(null);
+                        handleRefine(activeVariation, fb);
+                      }}
+                    >
+                      Refine →
+                    </button>
+                    <button className="og-refine-cancel" onClick={() => setRefiningIndex(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
