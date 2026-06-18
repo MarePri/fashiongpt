@@ -7,6 +7,7 @@ import { ARCHETYPES } from "./data/archetypes.js";
 import { PROMPTS } from "./data/prompts.js";
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
+import useMemory from "./hooks/useMemory.js";
 import useChat from "./hooks/useChat.js";
 import useFashionDNA from "./hooks/useFashionDNA.js";
 import useCapsuleWardrobe from "./hooks/useCapsuleWardrobe.js";
@@ -32,7 +33,14 @@ const TABS = [
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function FashionGPT() {
-  const [tab, setTab] = useState("outfit");
+  const memory = useMemory();
+  const [tab, setTab] = useState(() => memory.data.lastTab || "outfit");
+
+  // Persist tab changes to memory
+  const handleTabChange = (nextTab) => {
+    setTab(nextTab);
+    memory.save({ lastTab: nextTab });
+  };
 
   const chat = useChat();
   const dna = useFashionDNA();
@@ -42,10 +50,10 @@ export default function FashionGPT() {
     <div className="app">
       <div className="navbar">
         <Header />
-        <Sidebar tabs={TABS} activeTab={tab} onTabChange={setTab} />
+        <Sidebar tabs={TABS} activeTab={tab} onTabChange={handleTabChange} />
       </div>
 
-      {tab === "outfit" && <OutfitGenerator />}
+      {tab === "outfit" && <OutfitGenerator memory={memory} />}
 
       {tab === "looks" && <SavedLooks />}
 

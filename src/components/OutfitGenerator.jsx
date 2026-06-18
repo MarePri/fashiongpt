@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
 import useSavedOutfits from '../hooks/useSavedOutfits.js';
 import OutfitCard from './OutfitCard.jsx';
@@ -12,16 +12,33 @@ import { OutfitSkeleton } from './Skeleton.jsx';
  * Step 1: Pick occasion + style preference + budget
  * Step 2: Generating 3 looks (loading state)
  * Step 3: Compare 3 looks, save/rate/regenerate
+ *
+ * Props:
+ *   memory — useMemory hook (optional) for session persistence
  */
-export default function OutfitGenerator() {
+export default function OutfitGenerator({ memory }) {
   const generator = useOutfitGenerator();
   const saved = useSavedOutfits();
 
-  const [step, setStep] = useState('input'); // 'input' | 'generating' | 'results' | 'error'
-  const [selectedOccasion, setSelectedOccasion] = useState(null);
-  const [selectedArchetype, setSelectedArchetype] = useState(null);
-  const [budget, setBudget] = useState('');
-  const [looks, setLooks] = useState([]);
+  // Restore inputs from session memory
+  const initialOccasion = memory?.data?.lastInputs?.occasion || null;
+  const initialArchetype = memory?.data?.lastInputs?.archetype || null;
+  const initialBudget = memory?.data?.lastInputs?.budget || '';
+
+  // If returning with previous results, show them immediately
+  const initialStep = memory?.data?.lastResults && memory.isReturning ? 'results' : 'input';
+
+  const [step, setStep] = useState(initialStep);
+  const [selectedOccasion, setSelectedOccasion] = useState(initialOccasion);
+  const [selectedArchetype, setSelectedArchetype] = useState(initialArchetype);
+  const [budget, setBudget] = useState(initialBudget);
+  const [looks, setLooks] = useState(() => {
+    if (memory?.data?.lastResults && memory.isReturning) {
+      return memory.data.lastResults;
+    }
+    return [];
+  });
+  const [showBanner, setShowBanner] = useState(memory?.isReturning ?? false);
   const [expandedLook, setExpandedLook] = useState(null);
   const [activeVariation, setActiveVariation] = useState(0);
   const errorRef = useRef(null);
@@ -76,7 +93,14 @@ export default function OutfitGenerator() {
     setLooks(results);
     setStep('results');
     setActiveVariation(0);
-  }, [selectedOccasion, selectedArchetype, budget, generator]);
+    setShowBanner(false);
+
+    // Persist to session memory
+    memory?.recordGeneration(
+      { occasion: selectedOccasion, archetype: selectedArchetype, budget },
+      results
+    );
+  }, [selectedOccasion, selectedArchetype, budget, generator, memory]);
 
   /**
    * Regenerate a single look.
@@ -135,6 +159,21 @@ export default function OutfitGenerator() {
       <div className="section-pad outfit-gen">
         <div className="section-title">Create Your Look</div>
         <div className="section-sub">Tell us the occasion and we'll style 3 complete outfits.</div>
+
+        {/* Step indicator */}
+        {/* Welcome back banner */}
+        {showBanner && memory?.lastSeenAgo && (
+          <div className="og-banner">
+            <div className="og-banner-icon">👋</div>
+            <div className="og-banner-text">
+              <strong>Welcome back!</strong> Your last visit was {memory.lastSeenAgo()}.
+              {looks.length > 0 && (
+                <span> Want to <button className="og-banner-link" onClick={() => setStep('results')}>see your last looks</button>?</span>
+              )}
+            </div>
+            <button className="og-banner-close" onClick={() => setShowBanner(false)}>✕</button>
+          </div>
+        )}
 
         {/* Step indicator */}
         <div className="og-steps">

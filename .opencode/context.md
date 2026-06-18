@@ -1,42 +1,51 @@
-# FashionGPT — Project Context (Compacted)
+# FashionGPT — Project Context
 
 ## Environment
 - **Runtime:** Vite 5 + React 18 (Browser SPA), TS + JS
-- **Build:** `npm run build` → vite build (58 modules, 2.72s, 0 errors)
+- **Build:** `npm run build` → vite build (71 modules, 2.07s, 0 errors)
 - **TypeScript:** `tsc --noEmit` → 0 errors
 - **Deps:** react, react-dom, @supabase/supabase-js
 
-## Architecture (3-Layer)
+## Architecture (4-Layer)
 ```
-UI (JSX) → Services/Hooks → Agents (TS) → DB (TS/Supabase)
+UI (JSX) → Hooks/Components → Services/Agents (TS) → DB (TS/Supabase)
 ```
 
-## Current State — All Phases Complete ✅
+## Phase 1 Complete — The Outfit Experience ✅
+| Deliverable | Status |
+|-------------|--------|
+| `useSavedOutfits.js` — LocalStorage persistence (save/rate/remove) | ✅ |
+| `OutfitGenerator.jsx` — Multi-step: occasion → style → budget → 3-look comparison | ✅ |
+| `CriticScore.jsx` — Score bars, verdict, weather, suggestions, issues | ✅ |
+| `SavedLooks.jsx` — Collection with stats bar, filters (all/rated/unrated), critic toggle | ✅ |
+| `OutfitCard.jsx` — Enhanced: save heart, star rating, regenerate button | ✅ |
+| `App.jsx` — New tabs: Outfit(#1), Saved(#2); default=outfit | ✅ |
+| `index.css` — +300 lines of component styles | ✅ |
+| Committed + pushed to GitHub: `ddc6d10` → `origin/main` | ✅ |
 
-| Phase | Status | Key Deliverables |
-|-------|--------|-----------------|
-| **Phase 0** — Refactor | ✅ | Monolith → 30+ files (data/, utils/, services/, components/, hooks/) |
-| **Phase 1** — Service layer | ✅ | AI retry/validation, scoring, occasion mapping |
-| **Phase 2** — Agent layer (TS) | ✅ | 4 agents + orchestrator + types + logger |
-| **Phase 3** — DB layer (TS/Supabase) | ✅ | Client, 5 repos, migration SQL |
-| **Phase 4** — Outfit generator | ✅ | weather.ts, outfitGenerator.ts, useOutfitGenerator.js |
-| **M4** — Backend proxy | ✅ | server/ Express app: POST /api/{chat,outfit,dna} → Anthropic proxy |
-| **M5.1** — Error handling | ✅ | ErrorBoundary.jsx, Skeleton.jsx, main.jsx wrapped |
-| **M5.2** — Performance | ✅ | React.memo on 8 components, unique keys, useCallback patterns |
+## Phase 2 — Memory Persistence (In Progress)
+| Task | Status |
+|------|--------|
+| T1.1 — Create `useMemory` hook | ⏳ Next |
+| T1.2 — Wire memory into App.jsx (tab restore) | ⬜ |
+| T1.3 — Wire memory into OutfitGenerator (input restore) | ⬜ |
+| T1.4 — Build verification | ⬜ |
+| T1.5 — Reviewer verification + commit | ⬜ |
 
-## Remaining Work
-- ⬜ **One commit**: Stage all files, commit with message about M4+M5 completion
-- ⬜ **OPTIONAL**: Push to origin
+## Key Architecture Decisions
+- **Agent pipeline** (ProfileAgent→WardrobeAgent→OutfitAgent→CriticAgent) is production-quality TS but was invisible to users — Phase 1 connected it to UI
+- **`useSavedOutfits`** uses LocalStorage directly (not React context) — OutfitGenerator and SavedLooks each have their own instance, share via LocalStorage reads on mount
+- **OutfitGenerator** creates its own `useOutfitGenerator` + `useSavedOutfits` — clean component boundary
+- **3-look generation** calls generate() 3 times sequentially (parallel in future)
+- **Memory persistence** will store lastTab, lastInputs, lastResults, lastVisit in localStorage — so returning users pick up where they left off
 
-## Working Files (Uncommitted)
-- `server/package.json` + `server/index.js` — Express proxy
-- `src/components/ErrorBoundary.jsx` — React error boundary
-- `src/components/Skeleton.jsx` — Skeletons (Chat, Outfit, DNA)
-- `src/services/ai.js` — Now uses local proxy instead of direct Anthropic
-- `src/services/config.js` — Added `API_PROXY_URL`
-- `.env.local.example` — Added `VITE_API_PROXY_URL`
-- `src/main.jsx` — Wrapped in ErrorBoundary
-- `index.css` — Skeleton + error boundary styles
-- `src/components/Sidebar.jsx` — Added React.memo
-- `src/components/Dashboard.jsx` — Added React.memo
-- `ARCHITECTURAL_REVIEW.md` — Full principal engineer review
+## Anti-Patterns Noted
+- Color harmony logic duplicated across `outfit.agent.ts`, `critic.agent.ts`, `utils/outfit.js`
+- Anthropic API key lives in client bundle (security risk for production)
+- No real-time React state sync between OutfitGenerator and SavedLooks (LocalStorage-only)
+
+## Active Files
+- `src/hooks/useMemory.js` — **next file to create**
+- `src/hooks/useSavedOutfits.js` — existing, works
+- `src/App.jsx` — needs memory wiring
+- `src/components/OutfitGenerator.jsx` — needs input restoration from memory
