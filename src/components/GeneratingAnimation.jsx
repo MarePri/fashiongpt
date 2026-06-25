@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { OutfitSkeleton } from './Skeleton.jsx';
 
-/**
- * GeneratingAnimation — animated loading screen for outfit generation.
- *
- * Features:
- * - Cycling fashion icons
- * - Agent stage pipeline (Profile → Wardrobe → Outfit → Critic)
- * - Rotating style tips
- * - Breathing progress bar
- */
 const ICONS = ['👗', '👔', '👠', '👜', '💍', '✨'];
 
 const STAGES = [
@@ -32,50 +23,80 @@ const TIPS = [
   'Less is more — one bold piece, the rest neutral.',
 ];
 
-export default function GeneratingAnimation() {
+/**
+ * GeneratingAnimation — animated loading screen for outfit generation.
+ *
+ * Accepts optional `progress` (0-100) and `stage` (0-3) props from parent
+ * to sync with real generation progress. When provided, overrides internal timers.
+ *
+ * Features:
+ * - Cycling fashion icons
+ * - Agent stage pipeline (Profile → Wardrobe → Outfit → Critic)
+ * - Rotating style tips
+ * - Breathing progress bar
+ */
+export default function GeneratingAnimation({ progress: externalProgress, stage: externalStage }) {
   const [iconIndex, setIconIndex] = useState(0);
   const [stageIndex, setStageIndex] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const intervalRef = useRef(null);
 
+  // When external props are provided, they override internal state
+  const displayStage = externalStage !== undefined && externalStage >= 0
+    ? Math.min(externalStage, STAGES.length - 1)
+    : stageIndex;
+  const displayProgress = externalProgress !== undefined
+    ? Math.min(externalProgress, 100)
+    : progress;
+
   useEffect(() => {
-    // Cycle icon every 600ms
+    // If external stage/progress provided, skip internal timers for those
+    const hasExternalTiming = externalStage !== undefined || externalProgress !== undefined;
+
+    // Cycle icon every 600ms (always runs for the animated icon)
     const iconInterval = setInterval(() => {
       setIconIndex(prev => (prev + 1) % ICONS.length);
     }, 600);
 
-    // Cycle stage every 2.5s (simulates pipeline progression)
-    const stageInterval = setInterval(() => {
-      setStageIndex(prev => Math.min(prev + 1, STAGES.length - 1));
-    }, 2500);
-
-    // Rotate tips every 5s
+    // Rotate tips every 5s (always runs)
     const tipInterval = setInterval(() => {
       setTipIndex(prev => (prev + 1) % TIPS.length);
     }, 5000);
 
-    // Animate progress bar (smooth ramp over ~10s)
-    const startTime = Date.now();
-    const progressInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      // Ease-in-out: slow start, fast middle, slow end
-      const raw = Math.min(elapsed / 10000, 1);
-      // Cubic ease-in-out
-      const eased = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
-      setProgress(Math.min(eased * 100, 99)); // cap at 99% until done
-    }, 200);
+    // Internal timers only when external props are NOT provided
+    if (!hasExternalTiming) {
+      // Cycle stage every 2.5s (simulates pipeline progression)
+      const stageInterval = setInterval(() => {
+        setStageIndex(prev => Math.min(prev + 1, STAGES.length - 1));
+      }, 2500);
+
+      // Animate progress bar (smooth ramp over ~10s)
+      const startTime = Date.now();
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        // Ease-in-out: slow start, fast middle, slow end
+        const raw = Math.min(elapsed / 10000, 1);
+        // Cubic ease-in-out
+        const eased = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+        setProgress(Math.min(eased * 100, 99)); // cap at 99% until done
+      }, 200);
+
+      return () => {
+        clearInterval(iconInterval);
+        clearInterval(stageInterval);
+        clearInterval(tipInterval);
+        clearInterval(progressInterval);
+      };
+    }
 
     return () => {
       clearInterval(iconInterval);
-      clearInterval(stageInterval);
       clearInterval(tipInterval);
-      clearInterval(progressInterval);
     };
-  }, []);
+  }, [externalStage, externalProgress]);
 
-  const currentStage = STAGES[stageIndex];
-  const progressWidth = `${Math.round(progress)}%`;
+  const currentStage = STAGES[displayStage];
 
   return (
     <div className="section-pad outfit-gen">
@@ -90,11 +111,11 @@ export default function GeneratingAnimation() {
             <div
               key={stage.id}
               className={`og-gen-stage ${
-                i < stageIndex ? 'done' : i === stageIndex ? 'active' : 'pending'
+                i < displayStage ? 'done' : i === displayStage ? 'active' : 'pending'
               }`}
             >
               <div className="og-gen-stage-dot">
-                {i < stageIndex ? '✓' : stage.icon}
+                {i < displayStage ? '✓' : stage.icon}
               </div>
               <div className="og-gen-stage-label">{stage.label}</div>
             </div>
@@ -108,7 +129,7 @@ export default function GeneratingAnimation() {
         <div className="og-gen-bar-track">
           <div
             className="og-gen-bar-fill"
-            style={{ width: progressWidth }}
+            style={{ width: `${Math.round(displayProgress)}%` }}
           />
         </div>
 

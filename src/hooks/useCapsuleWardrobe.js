@@ -22,8 +22,8 @@ export default function useCapsuleWardrobe() {
   }, []);
 
   const buildCapsule = useCallback(() => {
-    // Guard: prevent concurrent invocations from rapid clicks
-    if (buildingRef.current) return;
+    // Guard: prevent concurrent invocations from rapid double-clicks
+    if (buildingRef.current || capsuleLoading) return;
     buildingRef.current = true;
 
     setCapsuleResult(null);
@@ -50,11 +50,12 @@ export default function useCapsuleWardrobe() {
       if (mountedRef.current) setCapsuleLoading(false);
       buildingRef.current = false;
     }
-  }, []);
+  }, [capsuleLoading]);
 
   const reset = useCallback(() => {
     setCapsuleResult(null);
-    // Don't reset buildingRef — let any in-flight complete naturally
+    setCapsuleLoading(false);
+    buildingRef.current = false;
   }, []);
 
   return { capsuleResult, capsuleLoading, buildCapsule, reset };

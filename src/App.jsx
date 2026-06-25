@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 
 // ─── Data (small, kept synchronous) ──────────────────────────────────────────
 import { OCCASIONS } from "./data/occasions.js";
@@ -11,17 +11,21 @@ import useMemory from "./hooks/useMemory.js";
 import useChat from "./hooks/useChat.js";
 import useFashionDNA from "./hooks/useFashionDNA.js";
 import useCapsuleWardrobe from "./hooks/useCapsuleWardrobe.js";
+import useKeyboardShortcuts from "./hooks/useKeyboardShortcuts.js";
 
 // ─── Components (static — always visible) ───────────────────────────────────
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import HomeScreen from "./components/HomeScreen.jsx";
+import SplashScreen from "./components/SplashScreen.jsx";
+import ShortcutsHelp from "./components/ShortcutsHelp.jsx";
 import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
 import { StyleMemoryProvider } from "./hooks/StyleMemoryContext.jsx";
 
 // ─── Components (lazy — code-split by tab) ──────────────────────────────────
 const OutfitGenerator = lazy(() => import("./components/OutfitGenerator.jsx"));
 const SavedLooks = lazy(() => import("./components/SavedLooks.jsx"));
+const StyleEvolution = lazy(() => import("./components/StyleEvolution.jsx"));
 const Discovery = lazy(() => import("./components/Discovery.jsx"));
 const ChatPanel = lazy(() => import("./components/ChatPanel.jsx"));
 const FashionDNA = lazy(() => import("./components/FashionDNA.jsx"));
@@ -38,6 +42,7 @@ const TABS = [
   { id: "trends", icon: "📈", label: "Trends" },
   { id: "chat", icon: "💬", label: "Chat" },
   { id: "capsule", icon: "🗂", label: "Capsule" },
+  { id: "evolution", icon: "📊", label: "Evolution" },
 ];
 
 // ─── Loading Skeleton (shown while lazy chunks load) ──────────────────────────
@@ -59,12 +64,18 @@ export default function FashionGPT() {
   const memory = useMemory();
   const [tab, setTab] = useState(() => memory.data.lastTab || "home");
   const [tryLookNonce, setTryLookNonce] = useState(0);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Persist tab changes to memory
-  const handleTabChange = (nextTab) => {
+  const handleTabChange = useCallback((nextTab) => {
     setTab(nextTab);
     memory.save({ lastTab: nextTab });
-  };
+  }, [memory]);
+
+  // Keyboard shortcuts (global navigation)
+  const { showHelp, setShowHelp } = useKeyboardShortcuts({
+    onNavigate: handleTabChange,
+  });
 
   const chat = useChat();
   const dna = useFashionDNA();
@@ -72,9 +83,22 @@ export default function FashionGPT() {
 
   return (
     <div className="app">
+      {/* Splash Screen — first-visit intro */}
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+
+      {/* Keyboard shortcuts help overlay */}
+      {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
+
       <div className="navbar">
         <Header />
         <Sidebar tabs={TABS} activeTab={tab} onTabChange={handleTabChange} />
+        <button
+          className="nav-shortcuts-btn"
+          onClick={() => setShowHelp(true)}
+          title="Keyboard shortcuts (?)"
+        >
+          ⌘?
+        </button>
       </div>
 
       <StyleMemoryProvider>
@@ -90,7 +114,7 @@ export default function FashionGPT() {
         )}
 
         {tab === "outfit" && <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />}
-        {tab === "looks" && <SavedLooks />}
+        {tab === "looks" && <SavedLooks onNavigate={handleTabChange} />}
         {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } }); setTryLookNonce(c => c + 1); handleTabChange('outfit'); }} />}
 
         {tab === "chat" && (
@@ -105,7 +129,15 @@ export default function FashionGPT() {
           />
         )}
 
-        {tab === "trends" && <TrendsRadar trends={TRENDS} />}
+        {tab === "trends" && (
+          <TrendsRadar
+            trends={TRENDS}
+            onTryTrend={(trendName) => {
+              memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), trend: trendName } });
+              handleTabChange('outfit');
+            }}
+          />
+        )}
 
         {tab === "dna" && (
           <FashionDNA
@@ -125,6 +157,10 @@ export default function FashionGPT() {
             buildCapsule={capsule.buildCapsule}
             onReset={capsule.reset}
           />
+        )}
+
+        {tab === "evolution" && (
+          <StyleEvolution />
         )}
       </Suspense>
       </SavedOutfitsProvider>

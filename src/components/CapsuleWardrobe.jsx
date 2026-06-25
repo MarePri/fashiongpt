@@ -17,12 +17,14 @@ function CapsuleWardrobe({ capsuleResult, capsuleLoading, buildCapsule, onReset 
 
       {!capsuleResult ? (
         <>
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, marginBottom: 16, fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
-            A capsule wardrobe is a curated collection of versatile, timeless pieces that work together. FashionGPT builds yours from across the Inditex ecosystem — mixing investment pieces with accessible finds.
+          <div className="empty-state-personality" style={{ padding: '20px 0' }}>
+            <span className="empty-state-icon">🗂</span>
+            <h3>Your 10-Piece Capsule</h3>
+            <p>A curated collection of versatile pieces that all work together. FashionGPT selects from across Inditex brands — mixing investment staples with accessible finds.</p>
+            <button className="btn-primary" onClick={buildCapsule} disabled={capsuleLoading}>
+              {capsuleLoading ? 'Building capsule…' : '✦ Build My Capsule'}
+            </button>
           </div>
-          <button className="btn-primary" onClick={buildCapsule} disabled={capsuleLoading}>
-            {capsuleLoading ? 'Building capsule…' : '✦ Build My Capsule'}
-          </button>
         </>
       ) : (
         <div style={{ animation: 'fadeIn 0.4s' }}>

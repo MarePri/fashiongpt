@@ -123,7 +123,11 @@ export default function Discovery({ onTryLook }) {
             </div>
 
             {arch.outfits.length === 0 ? (
-              <div className="disc-empty">No looks available for this style yet.</div>
+              <div className="empty-state-personality">
+                <span className="empty-state-icon">🎨</span>
+                <h3>Curating looks for {arch.name}</h3>
+                <p>We're working on outfits that match this style. Check back soon for hand-picked selections.</p>
+              </div>
             ) : (
               <div className="disc-outfits">
                 {arch.outfits.map((outfit) => (

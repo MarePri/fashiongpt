@@ -9,6 +9,8 @@
 import type { OrchestratorResponse } from '../agents/types';
 import { handleRequest } from '../agents/orchestrator';
 import { getWeather, type WeatherData } from './weather';
+import { generateOutfits as ruleGenerateOutfits } from '../rules/outfitEngine.js';
+import type { EngineOutfitResult } from '../rules/outfitEngine.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PUBLIC TYPES
@@ -162,43 +164,114 @@ export async function generateOutfit(input: OutfitGeneratorInput): Promise<Outfi
   }
 
   // ── Step 2: Run the orchestrator (Profile → Wardrobe → Outfit → Critic) ──────
-  const orchestratorResponse: OrchestratorResponse = await handleRequest({
-    type: 'build_outfit',
-    payload: {
-      archetypeId: input.archetypeId,
-      occasion: input.occasion,
-      budget: input.budget ?? null,
-      styleGoal: input.styleGoal,
-      preferredCategories: input.preferredCategories,
-      preferences: {
+  let orchestratorResponse: OrchestratorResponse | null = null;
+  try {
+    orchestratorResponse = await handleRequest({
+      type: 'build_outfit',
+      payload: {
+        archetypeId: input.archetypeId,
         occasion: input.occasion,
-        budget: input.budget,
+        budget: input.budget ?? null,
         styleGoal: input.styleGoal,
+        preferredCategories: input.preferredCategories,
+        preferences: {
+          occasion: input.occasion,
+          budget: input.budget,
+          styleGoal: input.styleGoal,
+        },
       },
-    },
-  });
+    });
+  } catch (orchestratorErr) {
+    warnings.push(`Orchestrator threw: ${orchestratorErr instanceof Error ? orchestratorErr.message : String(orchestratorErr)}`);
+    console.warn('[OutfitGenerator] Orchestrator threw, falling back to rule engine');
+  }
 
-  if (!orchestratorResponse.success) {
-    const errorMsg = orchestratorResponse.error || 'Orchestrator returned failure';
-    console.error(`[OutfitGenerator] Orchestrator failed:`, errorMsg);
-    return {
-      outfit: { items: [], name: 'Generation Failed' },
-      reasoning: `Could not generate outfit: ${errorMsg}`,
-      confidenceScore: 0,
-      styleScore: 0,
-      critique: {
+  if (!orchestratorResponse?.success) {
+    const errorMsg = orchestratorResponse?.error || 'Orchestrator returned failure or was unavailable';
+    console.warn(`[OutfitGenerator] ${errorMsg} — using rule-based engine as fallback`);
+
+    // ── Fallback: Rule-Based Engine ──────────────────────────────────────────
+    try {
+      const ruleResult = ruleGenerateOutfits({
+        occasion: input.occasion,
+        archetypeId: input.archetypeId,
+        budget: input.budget ?? null,
+        weather: weatherContext
+          ? { temperature: weatherContext.temperature, condition: weatherContext.condition }
+          : null,
+        styleGoal: input.styleGoal,
+        preferredCategories: input.preferredCategories,
+      });
+
+      // Pick the variation matching styleGoal, or default to first outfit
+      const variationMap: Record<string, number> = {
+        'alternative': 1,
+        'surprise': 2,
+        'surprise me': 2,
+      };
+      const variationIdx = input.styleGoal ? (variationMap[input.styleGoal.toLowerCase()] ?? 0) : 0;
+      const selected: EngineOutfitResult = ruleResult.outfits[variationIdx] || ruleResult.outfits[0];
+
+      // Map to OutfitGeneratorResult shape
+      return {
+        outfit: {
+          items: selected.outfit.items.map((item) => ({
+            id: (item as Record<string, unknown>).id as number | undefined,
+            brand: (item as Record<string, unknown>).brand as string || 'Unknown',
+            name: (item as Record<string, unknown>).name as string || 'Item',
+            cat: (item as Record<string, unknown>).cat as string | undefined,
+            color: (item as Record<string, unknown>).color as string | undefined,
+            price: (item as Record<string, unknown>).price as number | undefined,
+            img: (item as Record<string, unknown>).img as string | undefined,
+          })),
+          name: selected.outfit.name,
+          why: selected.outfit.why,
+        },
+        reasoning: selected.reasoning,
+        confidenceScore: selected.confidenceScore,
+        styleScore: selected.styleScore,
+        critique: selected.critique,
+        weatherContext: selected.weatherContext
+          ? {
+              temperature: selected.weatherContext.temperature,
+              condition: selected.weatherContext.condition,
+              description: selected.weatherContext.description,
+              recommendation: selected.weatherContext.recommendation,
+              humidity: weatherContext?.humidity ?? 50,
+              windSpeed: weatherContext?.windSpeed ?? 5,
+              feelsLike: selected.weatherContext.temperature,
+              icon: weatherContext?.icon ?? '01d',
+            }
+          : null,
+        approved: selected.critique.approved,
+        duration: ruleResult.duration,
+        agentTraces: [],
+        warnings: [...warnings, 'Used rule-based engine (AI orchestrator unavailable)'],
+      };
+    } catch (fallbackErr) {
+      // Rule engine also failed — return a meaningful hardcoded fallback
+      const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+      warnings.push(`Rule engine fallback also failed: ${fallbackMsg}`);
+      console.error('[OutfitGenerator] Rule engine fallback failed:', fallbackErr);
+      return {
+        outfit: { items: [], name: 'Generation Failed' },
+        reasoning: `Could not generate outfit (AI unavailable, rule engine error: ${fallbackMsg})`,
+        confidenceScore: 0,
+        styleScore: 0,
+        critique: {
+          approved: false,
+          scores: { occasionFit: 0, budgetCompliance: 0, styleCoherence: 0, colorHarmony: 0, trendAlignment: 0, overall: 0 },
+          suggestions: ['Try again later or check your connection'],
+          issues: [fallbackMsg],
+          verdict: 'Both AI and rule-based generation failed.',
+        },
+        weatherContext,
         approved: false,
-        scores: { occasionFit: 0, budgetCompliance: 0, styleCoherence: 0, colorHarmony: 0, trendAlignment: 0, overall: 0 },
-        suggestions: ['Try again with different parameters'],
-        issues: [errorMsg],
-        verdict: 'Generation failed due to an internal error.',
-      },
-      weatherContext,
-      approved: false,
-      duration: Date.now() - absoluteStart,
-      agentTraces: orchestratorResponse.agents,
-      warnings: [...warnings, errorMsg],
-    };
+        duration: Date.now() - absoluteStart,
+        agentTraces: [],
+        warnings,
+      };
+    }
   }
 
   // ── Step 3: Extract and structure the result ────────────────────────────────

@@ -5,10 +5,15 @@ import { useStyleMemoryContext } from '../hooks/StyleMemoryContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
 import GeneratingAnimation from './GeneratingAnimation.jsx';
+import InteractiveOutfitBuilder from './InteractiveOutfitBuilder.jsx';
+import StyleCoachInsight from './StyleCoachInsight.jsx';
+import OutfitBattle from './OutfitBattle.jsx';
 import { OCCASIONS } from '../data/occasions.js';
 import { ARCHETYPES } from '../data/archetypes.js';
 import { OutfitSkeleton } from './Skeleton.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
+import { isOfflineMode } from '../services/config.js';
+import { generateOfflineLooks } from '../services/offlineEngine.js';
 
 /**
  * OutfitGenerator — Multi-step structured outfit generation.
@@ -40,9 +45,52 @@ export default function OutfitGenerator({ memory }) {
   const [refiningIndex, setRefiningIndex] = useState(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [compareMode, setCompareMode] = useState(false);
+  const [customizingIndex, setCustomizingIndex] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
+  const [saveToast, setSaveToast] = useState(null);
+  const [genStage, setGenStage] = useState(-1);
+  const [genProgress, setGenProgress] = useState(0);
+  const genTimerRef = useRef(null);
   const errorRef = useRef(null);
 
+  // Cleanup genTimer on unmount
+  useEffect(() => {
+    return () => {
+      if (genTimerRef.current) {
+        clearInterval(genTimerRef.current);
+        genTimerRef.current = null;
+      }
+    };
+  }, []);
+
   useEffect(() => { setRefiningIndex(null); }, [activeVariation]);
+
+  // Fetch weather for outfit context on mount
+  useEffect(() => {
+    let cancelled = false;
+    import('../services/weather.ts').then(({ getWeather }) => {
+      getWeather({ city: 'Madrid' }).then(data => {
+        if (!cancelled) setWeatherData(data);
+      }).catch(() => {});
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Local keyboard shortcuts: 1-3 select look, s saves
+  useEffect(() => {
+    const handleKey = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (step !== 'results') return;
+      const key = e.key.toLowerCase();
+      if (key === '1') { e.preventDefault(); setActiveVariation(0); }
+      if (key === '2') { e.preventDefault(); setActiveVariation(1); }
+      if (key === '3') { e.preventDefault(); setActiveVariation(2); }
+      if (key === 's' && looks[activeVariation]) { e.preventDefault(); handleSave(activeVariation); }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [step, activeVariation, looks, handleSave]);
 
   const styleVariations = [
     { id: selectedArchetype, label: 'Your Style' },
@@ -65,49 +113,91 @@ export default function OutfitGenerator({ memory }) {
     setCompareMode(false);
     errorRef.current = null;
 
+    // Start real-time progress tracking synced to actual generation time
+    const genStartTime = Date.now();
+    setGenStage(0);
+    setGenProgress(0);
+    genTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - genStartTime;
+      // Map elapsed to agent stage (2.5s per stage = ~10s full pipeline)
+      const stageDuration = 2500;
+      const stage = Math.min(Math.floor(elapsed / stageDuration), 3);
+      setGenStage(stage);
+      // Progress: ease-in-out curve over ~10s, cap at 95% until done
+      const raw = Math.min(elapsed / 10000, 1);
+      const eased = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+      setGenProgress(Math.round(eased * 95));
+    }, 200);
+
     const occasionObj = OCCASIONS.find(o => o.id === selectedOccasion);
     const occasionText = occasionObj ? `${occasionObj.label} — ${occasionObj.vibe}` : selectedOccasion;
     const budgetNum = budget ? parseFloat(budget) : null;
     const memPrefs = styleMem?.getPreferences() || {};
     const memSummary = styleMem?.getSummary() || '';
 
-    const promises = [0, 1, 2].map((i) => {
-      const variationLabel = styleVariations[i]?.label || 'Versatile';
-      const variationGoal = memSummary
-        ? `${variationLabel} look for ${occasionText}. ${memSummary}`
-        : `${variationLabel} look for ${occasionText}`;
-      return generator
-        .generate({
-          occasion: occasionText,
-          budget: budgetNum,
-          archetypeId: styleVariations[i]?.id || undefined,
-          styleGoal: variationGoal,
-          preferredCategories: memPrefs.preferredCategories,
-        })
-        .then((result) =>
-          result
-            ? {
-                ...result,
-                variationIndex: i,
-                variationLabel: styleVariations[i]?.label || 'Look',
-                styleCategory: STYLE_CATEGORIES[i] || 'Signature Style',
-              }
-            : null
-        )
-        .catch((err) => {
-          console.warn(`[OutfitGenerator] Look ${i + 1} failed:`, err);
-          return null;
-        });
-    });
+    let results;
 
-    const results = (await Promise.all(promises)).filter(Boolean);
+    // Offline mode: return seed outfits immediately (no API call)
+    if (isOfflineMode()) {
+      console.info('[OutfitGenerator] Offline mode — using seed outfits');
+      const seeds = await generateOfflineLooks();
+      results = seeds.map((seed, i) => ({
+        ...seed,
+        variationIndex: i,
+        variationLabel: styleVariations[i]?.label || 'Look',
+        styleCategory: STYLE_CATEGORIES[i] || 'Signature Style',
+      }));
+    } else {
+      const promises = [0, 1, 2].map((i) => {
+        const variationLabel = styleVariations[i]?.label || 'Versatile';
+        const variationGoal = memSummary
+          ? `${variationLabel} look for ${occasionText}. ${memSummary}`
+          : `${variationLabel} look for ${occasionText}`;
+        return generator
+          .generate({
+            occasion: occasionText,
+            budget: budgetNum,
+            archetypeId: styleVariations[i]?.id || undefined,
+            styleGoal: variationGoal,
+            preferredCategories: memPrefs.preferredCategories,
+            weather: weatherData ? { city: 'Madrid' } : undefined,
+          })
+          .then((result) =>
+            result
+              ? {
+                  ...result,
+                  variationIndex: i,
+                  variationLabel: styleVariations[i]?.label || 'Look',
+                  styleCategory: STYLE_CATEGORIES[i] || 'Signature Style',
+                }
+              : null
+          )
+          .catch((err) => {
+            console.warn(`[OutfitGenerator] Look ${i + 1} failed:`, err);
+            return null;
+          });
+      });
+      results = await Promise.all(promises);
+    }
+
+    // Clear progress timer (all paths: success, error, or component unmount)
+    const clearGenTimer = () => {
+      if (genTimerRef.current) {
+        clearInterval(genTimerRef.current);
+        genTimerRef.current = null;
+      }
+      setGenStage(4);
+      setGenProgress(100);
+    };
 
     if (results.length === 0) {
+      clearGenTimer();
       setStep('error');
       errorRef.current = 'All generation attempts failed. The AI service may be temporarily unavailable.';
       return;
     }
 
+    clearGenTimer();
     setLooks(results);
     setStep('results');
     setActiveVariation(0);
@@ -119,6 +209,20 @@ export default function OutfitGenerator({ memory }) {
     );
     styleMem?.recordGeneration(selectedOccasion, selectedArchetype);
   }, [selectedOccasion, selectedArchetype, budget, generator, memory, styleMem]);
+
+  const handleModifyLook = useCallback((index, modifiedLook) => {
+    setLooks(prev => {
+      const next = [...prev];
+      if (next[index] && modifiedLook) {
+        next[index] = { ...next[index], ...modifiedLook };
+      }
+      return next;
+    });
+  }, []);
+
+  const handleCustomizeToggle = useCallback((index) => {
+    setCustomizingIndex(prev => prev === index ? null : index);
+  }, []);
 
   const handleRegenerate = useCallback(async (index) => {
     if (!selectedOccasion) return;
@@ -209,6 +313,22 @@ export default function OutfitGenerator({ memory }) {
       budget ? parseFloat(budget) : null
     );
     styleMem?.recordSave(look, selectedOccasion, selectedArchetype);
+
+    // Show save celebration toast
+    const totalSaved = saved.savedOutfits.length + 1;
+    setSaveToast({
+      message: totalSaved === 1
+        ? '🎉 First look saved! Your style journey begins.'
+        : totalSaved === 5
+          ? '🌟 5 looks saved! FashionGPT is learning your style.'
+          : totalSaved === 10
+            ? '🏆 10 looks saved! You\'re building a style library.'
+            : totalSaved === 25
+              ? '👑 25 looks saved! Style icon status.'
+              : '❤️ Look saved!',
+      emoji: totalSaved === 1 ? '🎉' : totalSaved === 5 ? '🌟' : totalSaved === 10 ? '🏆' : totalSaved === 25 ? '👑' : '✓',
+    });
+    setTimeout(() => setSaveToast(null), 3000);
   }, [looks, selectedOccasion, selectedArchetype, budget, saved, styleMem]);
 
   const handleRate = useCallback((id, rating) => {
@@ -251,6 +371,33 @@ export default function OutfitGenerator({ memory }) {
   if (step === 'input') {
     return (
       <div className="section-pad outfit-gen">
+        {/* ═══════════════════════════════════════════════════════
+           QUICK GENERATE — 3-click outfit generation
+           ═══════════════════════════════════════════════════════ */}
+        <div className="og-quick-section">
+          <button
+            className="og-quick-btn"
+            onClick={() => {
+              const randomOccasion = OCCASIONS[Math.floor(Math.random() * OCCASIONS.length)];
+              const randomArch = ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
+              setSelectedOccasion(randomOccasion.id);
+              setSelectedArchetype(randomArch.id);
+              // Trigger generation on next tick after state settles
+              setTimeout(() => {
+                const btn = document.querySelector('.og-generate-btn');
+                if (btn) btn.click();
+              }, 50);
+            }}
+          >
+            <span className="og-quick-btn-icon">⚡</span>
+            <span>
+              <div>Quick Generate</div>
+              <div className="og-quick-btn-sub">Random occasion & style — 3 looks instantly</div>
+            </span>
+          </button>
+          <div className="og-divider">or customize your look</div>
+        </div>
+
         <div className="section-title">Create Your Look</div>
         <div className="section-sub">Tell us the occasion and we'll style 3 complete outfits.</div>
 
@@ -354,7 +501,7 @@ export default function OutfitGenerator({ memory }) {
   // ─── Step: GENERATING ────────────────────────────────────────────────────
 
   if (step === 'generating') {
-    return <GeneratingAnimation />;
+    return <GeneratingAnimation stage={genStage} progress={genProgress} />;
   }
 
   // ─── Step: ERROR ─────────────────────────────────────────────────────────
@@ -388,6 +535,14 @@ export default function OutfitGenerator({ memory }) {
 
   return (
     <div className="section-pad outfit-gen">
+      {/* Save celebration toast */}
+      {saveToast && (
+        <div className="og-save-toast" key={saveToast.message}>
+          <span className="og-save-toast-icon">{saveToast.emoji}</span>
+          <span className="og-save-toast-msg">{saveToast.message}</span>
+        </div>
+      )}
+
       <div className="og-results-header">
         <div className="section-title">
           Your 3 Looks
@@ -396,6 +551,7 @@ export default function OutfitGenerator({ memory }) {
         <div className="section-sub">
           {OCCASIONS.find(o => o.id === selectedOccasion)?.label || 'Styled for you'}
           {budget ? ` · €${budget} budget` : ''}
+          {weatherData && ` · ${weatherData.temperature}°C ${weatherData.condition}`}
         </div>
       </div>
 
@@ -417,6 +573,14 @@ export default function OutfitGenerator({ memory }) {
             </button>
           );
         })}
+        {/* Customize button */}
+        <button
+          className={`og-customize-btn${customizingIndex === activeVariation ? ' active' : ''}`}
+          onClick={() => handleCustomizeToggle(activeVariation)}
+          title={customizingIndex === activeVariation ? 'Close builder' : 'Customize this look'}
+        >
+          ✏️ {customizingIndex === activeVariation ? 'Done' : 'Customize'}
+        </button>
       </div>
 
       {/* Compare mode toggle */}
@@ -431,43 +595,17 @@ export default function OutfitGenerator({ memory }) {
         </div>
       )}
 
-      {/* Compare view — show all 3 looks side by side */}
+      {/* Outfit Battle — side-by-side with Pick Winner */}
       {compareMode ? (
-        <div className="og-compare-grid">
-          {looks.map((look, i) => {
-            const c = look.critique?.scores || {};
-            const overall = c.overall || 75;
-            return (
-              <div key={i} className="og-compare-card" onClick={() => { setCompareMode(false); setActiveVariation(i); }}>
-                <div className="og-compare-header">
-                  <span className="og-compare-label">{look.variationLabel || `Look ${i + 1}`}</span>
-                  <span className="og-compare-sub">{STYLE_CATEGORIES[i] || 'Signature'}</span>
-                </div>
-                <div className="og-compare-score-circle" style={{
-                  borderColor: overall >= 70 ? 'var(--up)' : overall >= 40 ? 'var(--accent2)' : 'var(--down)',
-                }}>
-                  <span className="og-compare-score-val">{overall}</span>
-                  <span className="og-compare-score-lbl">Overall</span>
-                </div>
-                <div className="og-compare-stats">
-                  <div className="og-compare-stat">
-                    <span className="og-compare-stat-lbl">Occasion</span>
-                    <span className="og-compare-stat-val" style={{ color: (c.occasionFit || 70) >= 70 ? 'var(--up)' : 'var(--accent2)' }}>{c.occasionFit || 70}</span>
-                  </div>
-                  <div className="og-compare-stat">
-                    <span className="og-compare-stat-lbl">Color</span>
-                    <span className="og-compare-stat-val" style={{ color: (c.colorHarmony || 70) >= 70 ? 'var(--up)' : 'var(--accent2)' }}>{c.colorHarmony || 70}</span>
-                  </div>
-                  <div className="og-compare-stat">
-                    <span className="og-compare-stat-lbl">Style</span>
-                    <span className="og-compare-stat-val" style={{ color: (c.styleCoherence || 70) >= 70 ? 'var(--up)' : 'var(--accent2)' }}>{c.styleCoherence || 70}</span>
-                  </div>
-                </div>
-                <div className="og-compare-cta">Tap to view →</div>
-              </div>
-            );
-          })}
-        </div>
+        <OutfitBattle
+          looks={looks}
+          styleCategories={STYLE_CATEGORIES}
+          onPickWinner={(index) => {
+            setCompareMode(false);
+            setActiveVariation(index);
+          }}
+          onRegenerate={handleRegenerate}
+        />
       ) : (
         /* Single look view */
         activeLook && (
@@ -483,17 +621,28 @@ export default function OutfitGenerator({ memory }) {
               onFeedback={handleFeedback(activeVariation)}
             />
 
-            {/* StyleCoach: Iterative Refinement */}
+            {/* InteractiveOutfitBuilder: Customize this look */}
+            {customizingIndex === activeVariation && (
+              <InteractiveOutfitBuilder
+                look={activeLook}
+                onModify={(modifiedLook) => handleModifyLook(activeVariation, modifiedLook)}
+                onClose={() => setCustomizingIndex(null)}
+              />
+            )}
+
+            {/* StyleCoach: Educational Insight Cards */}
             <div className="og-critic-section">
               <div className="og-critic-toggle" onClick={() => setExpandedLook(expandedLook === activeVariation ? null : activeVariation)}>
-                <span>⭐ Expert Critique</span>
+                <span>🧠 StyleCoach — Why This Works</span>
                 <span className="og-toggle-arrow">{expandedLook === activeVariation ? '▲' : '▼'}</span>
               </div>
               {expandedLook === activeVariation && (
-                <CriticScore
+                <StyleCoachInsight
                   critique={critique}
                   styleScore={activeLook.styleScore}
                   weatherContext={activeLook.weatherContext}
+                  occasion={selectedOccasion}
+                  archetypeId={selectedArchetype}
                 />
               )}
             </div>

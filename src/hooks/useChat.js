@@ -3,6 +3,9 @@ import { callAI } from '../services/ai.js';
 import { PRODUCTS } from '../data/products.js';
 import { parseOutfitFromProducts } from '../utils/outfit.js';
 
+// ─── Keep chat history manageable ─────────────────────────────────────────────
+const MAX_HISTORY = 30;
+
 /**
  * Hook managing chat state and message logic.
  */
@@ -13,6 +16,16 @@ export default function useChat() {
   const chatEndRef = useRef(null);
   const abortRef = useRef(null);
   const mountedRef = useRef(true);
+
+  /**
+   * Trim old messages when history exceeds MAX_HISTORY.
+   * Keeps the most recent messages and preserves at least one user+ai pair.
+   */
+  const trimHistory = useCallback((msgs) => {
+    if (msgs.length <= MAX_HISTORY) return msgs;
+    // Always keep the last MAX_HISTORY messages
+    return msgs.slice(msgs.length - MAX_HISTORY);
+  }, []);
 
   // Track mount state and abort in-flight requests on unmount
   useEffect(() => {
@@ -37,7 +50,7 @@ export default function useChat() {
     abortRef.current = controller;
 
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setMessages(prev => trimHistory([...prev, { role: 'user', content: msg }]));
     setLoading(true);
     try {
       const productContext = PRODUCTS.slice(0, 20)
@@ -72,7 +85,7 @@ Rules:
         outfit.name = 'Your Styled Look';
         outfit.why = 'Curated by FashionGPT based on your request';
       }
-      setMessages(prev => [...prev, { role: 'ai', content: reply, outfit }]);
+      setMessages(prev => trimHistory([...prev, { role: 'ai', content: reply, outfit }]));
     } catch (err) {
       if (!mountedRef.current) return;
       const suggestion = err?.message?.includes('fetch') || err?.message?.includes('NetworkError')
@@ -80,10 +93,10 @@ Rules:
         : err?.message?.includes('401') || err?.message?.includes('403')
         ? 'API key issue. Check your .env file has a valid API key.'
         : 'Something went wrong. Check your API key in .env or try again later.';
-      setMessages(prev => [
+      setMessages(prev => trimHistory([
         ...prev,
         { role: 'ai', content: `⚠️ ${suggestion}`, outfit: null },
-      ]);
+      ]));
     }
     if (mountedRef.current) setLoading(false);
   }, [input]);

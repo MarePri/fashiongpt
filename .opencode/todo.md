@@ -1,44 +1,36 @@
-# Mission: V1 Foundation & Polish — Connect Weather, Fix Critical Issues, Polish UX
+# Mission: Portfolio Polish (Phase 6) — Demo-Ready Showpiece
 
-## M1: P0 Critical Fixes | status: completed
+## M7: Portfolio Polish | status: completed
 
-### T1.1: Extract color harmony to shared module | agent:Worker | size:M
-- [x] S1.1.1: Create `src/utils/colorHarmony.ts` with COLOR_GROUPS + computeColorHarmony + getColorGroup
-- [x] S1.1.2: Update `src/agents/outfit.agent.ts` to import from shared module
-- [x] S1.1.3: Update `src/agents/critic.agent.ts` to import from shared module
-- [x] S1.1.4: Update `src/utils/outfit.js` to import from shared module
-- [x] S1.1.5: Verify build passes (tsc + vite build)
+### T7.1: Demo-Ready | status: completed
+#### P7.1.1: Seed Data — 3 pre-generated outfits | agent:Worker
+- [x] S7.1.1.1: Created src/data/seedOutfits.js with 3 complete OutfitGeneratorResult objects (wedding, date, office) | size:M
 
-### T1.2: Add AbortController to async hooks | agent:Worker | size:M
-- [x] S1.2.1: Update `callAI()` in `src/services/ai.js` to accept AbortSignal
-- [x] S1.2.2: Update `useOutfitGenerator.js` — create AbortController, pass signal, abort on cleanup
-- [x] S1.2.3: Update `useChat.js` — create AbortController, pass signal, abort on cleanup
-- [x] S1.2.4: Update `useFashionDNA.js` — create AbortController, pass signal, abort on cleanup
-- [x] S1.2.5: Update `useCapsuleWardrobe.js` — abort on cleanup (sync, no API calls needed)
-- [x] S1.2.6: Verify build passes
+#### P7.1.2: Offline Mode — robust fallback | agent:Worker
+- [x] S7.1.2.1: Created offlineEngine.js that returns seedOutfits when isOfflineMode() is true | size:M
+- [x] S7.1.2.2: Wired offline engine into OutfitGenerator handleGenerate as fallback | size:M
 
-### T1.3: Fix useCapsuleWardrobe race condition | agent:Worker | size:S
-- [x] S1.3.1: Add `isBuilding` ref guard to prevent concurrent `buildCapsule` calls
-- [x] S1.3.2: Verify build passes
+#### P7.1.3: Keyboard shortcuts | agent:Worker
+- [x] S7.1.3.1: Created useKeyboardShortcuts hook with global listeners (g→outfit, h→home, l→looks, d→discover, ?→help) | size:M
+- [x] S7.1.3.2: Created ShortcutsHelp overlay component + CSS | size:S
+- [x] S7.1.3.3: Integrated hook + overlay into App.jsx + OutfitGenerator (1-3→looks, s→save) | size:S
 
-## M2: P1 Weather + UX Polish | status: completed
+#### P7.1.4: Print-friendly outfit card | agent:Worker
+- [x] S7.1.4.1: Added @media print CSS to index.css for outfit cards, discovery cards | size:S
 
-### T2.1: Connect weather to UI | agent:Worker | size:M
-- [x] S2.1.1: Create WeatherWidget component showing current weather in OutfitGenerator
-- [x] S2.1.2: Integrate fetchWeather + display into OutfitGenerator input step
-- [x] S2.1.3: Verify build passes
+### T7.2: First Impressions | status: completed
+#### P7.2.1: Splash screen | agent:Worker
+- [x] S7.2.1.1: Created SplashScreen component with "Your AI Stylist — no chatbot, just style." | size:S
+- [x] S7.2.1.2: Wired into App.jsx as first-visit intro overlay (localStorage gate) | size:S
 
-### T2.2: Add keyboard shortcuts | agent:Worker | size:S | status:completed
-- [x] S2.2.1: Add Cmd/Ctrl+Enter shortcut to ChatPanel (existing Enter, add modifier)
-- [x] S2.2.2: Add Esc to cancel refinement in OutfitGenerator
-- [x] S2.2.3: Verify build passes
+#### P7.2.2: Quick-start: 3-click outfit generation | agent:Worker
+- [x] S7.2.2.1: Added ⚡ Quick Generate button in OutfitGenerator — picks random defaults + auto-generates | size:S
 
-### T2.3: Add error recovery suggestions | agent:Worker | size:S | status:completed
-- [x] S2.3.1: Improve error messages in hooks with actionable suggestions
-- [x] S2.3.2: Verify build passes
+#### P7.2.3: Empty states with personality | agent:Worker
+- [x] S7.2.3.1: Enhanced empty states in Discovery, CapsuleWardrobe, FashionDNA with personality CTAs | size:M
 
-## M3: Full System Verification | agent:Reviewer | size:M | status:completed
-- [x] S3.1: Verify build passes (vite build) — ✅ 79 modules, 2.53s, 0 errors
-- [x] S3.2: Verify all tests pass (vitest run) — ✅ 4 files, 34 tests, all pass
-- [x] S3.3: Verify LSP diagnostics clean — ✅ tsc --noEmit passes with 0 errors
-- [x] S3.4: Final sign-off — all todos marked [x]
+### T7.3: Final Verification | agent:Reviewer | status:completed
+- [x] S7.3.1: Build passes (npm run build) — 88 modules, 0 errors | size:M
+- [x] S7.3.2: TypeScript clean (tsc --noEmit) — exit 0 | size:M
+- [x] S7.3.3: Offline mode end-to-end verified — seed outfits loaded on isOfflineMode() | size:M
+- [x] S7.3.4: All 7 polish items verified — splash seen once via localStorage gate, shortcuts toggle via ? | size:L

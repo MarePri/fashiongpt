@@ -1,65 +1,49 @@
-# Project Context
+# FashionGPT Project Context
 
 ## Environment
-- Language: JavaScript (React JSX) + TypeScript (infrastructure)
-- Runtime: Node.js (via Vite)
-- Build: `npm run build` → vite build (2.26s, 77 modules, 0 errors)
-- Test: `npm test` → vitest run (6 tests, all pass)
+- Language: JavaScript (JSX) + TypeScript
+- Runtime: Node.js via Vite (v5.4.21)
+- Build: `npm run build` → use `npx.cmd vite build` (PowerShell execution policy blocks `npm.ps1`)
+- TS Check: `tsc --noEmit` — pass (exit 0)
+- Test: `npm test` (vitest) — no tests exist
 - Package Manager: npm
 
 ## Project Type
-- [x] Application (Web SPA)
-- [ ] Library/Package
-- [ ] Microservice
-- [ ] Monorepo
-
-## Infrastructure
-- Container: None
-- Orchestration: None
-- CI/CD: None detected
-- Cloud: Supabase (configured, not connected to UI)
+- [x] Application (SPA — Fashion AI Stylist)
 
 ## Structure
-- Source: `src/`
-- Tests: `src/hooks/__tests__/`
-- Entry: `src/main.jsx`
+- Source: src/ (25+ components, 8 hooks, 7 agents, 5 services, 8 data files, 6 rule files)
+- Entry: src/main.jsx → src/App.jsx
+- Agents pipeline: Profile → Wardrobe → Outfit → Critic → orchestrator → outfitGenerator.ts
+- 9 tabs: Home, Outfit, Saved, Discover, DNA, Trends, Chat, Capsule, Evolution
 
-## Tech Stack
-- React 18 + Vite 5
-- TypeScript 6 (agents, db, services)
-- JavaScript (UI components, hooks)
-- Supabase (DB client, 5 repositories)
-- Anthropic Claude API (via ai.js)
-- Vitest + jsdom (testing)
+## Completed Missions
 
-## Key Architecture
-- 3-layer: UI → Services → Agents → DB
-- Code-split by tab (React.lazy + Suspense)
-- ErrorBoundary wraps app
-- LocalStorage persistence via useMemory hook
-- 4 agents: Profile, Wardrobe, Outfit, Critic
-- Orchestrator coordinates agent pipeline
+### Mission 1: First 100 Users UX Fixes
+**13/13 issues** — bugs, weather, celebrations, onboarding, empty states, animations.
 
-## Current Build Status
-- Build: ✅ PASS (79 modules, 2.53s, 0 errors)
-- Tests: ✅ 34/34 pass (4 test files)
-- Lint: Not configured
+### Mission 2: Portfolio Polish (Phase 6)
+**7/7 items** — seed data, offline mode, keyboard shortcuts, print CSS, splash screen, quick generate, empty states + SYNC-2 bugfix.
+
+### Phases M2–M6: Explainable AI Stylist Upgrade ✓
+**5 phases, 12 new/modified files, ~1200+ lines added.** Build clean at 97 modules / 0 errors.
+
+| Phase | Component | Files | What It Does |
+|-------|-----------|-------|-------------|
+| **M2** | Rule Engine | `src/rules/` (6 files) | Deterministic outfit generation: style/occasion/weather/color rules + scoring orchestrator. Falls back when AI unavailable. |
+| **M3** | Interactive Builder | `InteractiveOutfitBuilder.jsx` + wiring + CSS | Swap items (top/bottom/shoes), formality slider, color swap, live score preview. `modifyOutfit()` engine in `outfitEngine.ts`. |
+| **M4** | Style Coach | `StyleCoachInsight.jsx` + wiring + CSS | 5-6 educational insight cards: verdict, occasion fit, color harmony, style coherence, trends, weather. "Learn more" expand with tips. |
+| **M5** | Outfit Battle | `OutfitBattle.jsx` + wiring + CSS | 3-card side-by-side, dimension compare table, crown indicators for best-in-class, "Pick Winner" mechanic. Replaces old compare view. |
+| **M6** | Style Evolution | `StyleEvolution.jsx` + `App.jsx` tab + CSS | Preference dashboard: top brands/categories/colors/occasions/archetypes, avg scores/prices, saved looks gallery, clear data. Tracks user taste over time. |
+
+### Architecture Notes
+- Rule engine (`src/rules/`) is imported as **fallback** in `outfitGenerator.ts` — primary path still uses AI orchestrator
+- `InteractiveOutfitBuilder` and `StyleCoachInsight` use **dynamic imports** of rule modules (lazy-loaded)
+- `StyleMemoryContext` persists to localStorage — feeds preferences back into generation
+- `OutfitBattle` uses existing `critique.scores` from any generation method
 
 ## Conventions
-- Naming: camelCase (JS), PascalCase (components)
-- Imports: relative paths
-- CSS: Single index.css file, CSS-in-JS template strings in components
-- Error handling: try/catch with graceful fallbacks, mock data when API fails
-- State: useState in hooks, context for shared state (SavedOutfitsContext, StyleMemoryContext)
-
-## V1 Completed (June 2026)
-- ✅ Color harmony extracted to shared `src/utils/colorHarmony.ts`
-- ✅ AbortController added to all async hooks (ai.js, useChat, useOutfitGenerator, useFashionDNA)
-- ✅ useCapsuleWardrobe race condition fixed (buildingRef guard)
-- ✅ WeatherWidget created and integrated into OutfitGenerator
-- ✅ Keyboard shortcuts: Cmd/Ctrl+Enter (ChatPanel), Esc (cancel refine)
-- ✅ Error recovery suggestions with actionable messages
-
-## Known Open Issues
-- AI API key in client bundle (security risk for production)
-- No request deduplication
+- Naming: camelCase JSX, PascalCase components
+- Styles: single index.css (~2900 lines)
+- State: React hooks + Context (SavedOutfitsContext, StyleMemoryContext)
+- New rules code in src/rules/, UI in src/components/

@@ -27,6 +27,7 @@ export default function HomeScreen({ memory, dna, onNavigate }) {
   const [timeIcon, setTimeIcon] = useState('☀️');
   const [styleTip, setStyleTip] = useState('');
   const [insightText, setInsightText] = useState('');
+  const [showMilestone, setShowMilestone] = useState(true);
 
   // Time-aware greeting
   useEffect(() => {
@@ -168,6 +169,37 @@ export default function HomeScreen({ memory, dna, onNavigate }) {
   return (
     <div className="home-screen">
       {/* ═══════════════════════════════════════════════════════════
+         ONBOARDING: First-Visit Walkthrough
+         ═══════════════════════════════════════════════════════════ */}
+      {!memory?.data?.lastVisit && !styleMem?.hasData && (
+        <div className="onboarding-overlay">
+          <span className="onboarding-icon">✨</span>
+          <h2 className="onboarding-title">Your <em>Personal AI Stylist</em></h2>
+          <p className="onboarding-text">FashionGPT creates custom outfits from Inditex brands (Zara, Pull&Bear, Bershka & more) — styled for your occasion, budget, and personality.</p>
+          <div className="onboarding-steps">
+            <div className="onboarding-step">
+              <span className="onboarding-step-icon">✨</span>
+              <span className="onboarding-step-text"><strong>Generate</strong> — Pick an occasion and get 3 AI-styled looks</span>
+            </div>
+            <div className="onboarding-step">
+              <span className="onboarding-step-icon">❤️</span>
+              <span className="onboarding-step-text"><strong>Save & Rate</strong> — Your feedback teaches FashionGPT your taste</span>
+            </div>
+            <div className="onboarding-step">
+              <span className="onboarding-step-icon">🧬</span>
+              <span className="onboarding-step-text"><strong>Discover</strong> — Your Style DNA, Trend Radar, and Capsule Wardrobe</span>
+            </div>
+          </div>
+          <button className="onboarding-cta" onClick={() => onNavigate?.('outfit')}>
+            ✦ Generate My First Look
+          </button>
+          <button className="onboarding-dismiss" onClick={() => memory?.save?.({ lastVisit: Date.now() })}>
+            I'll explore on my own →
+          </button>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
          SECTION 1: GREETING + TIME
          ═══════════════════════════════════════════════════════════ */}
       <div className="home-greeting-section">
@@ -177,6 +209,7 @@ export default function HomeScreen({ memory, dna, onNavigate }) {
           {memory?.data?.lastVisit ? (
             <p className="home-returning">
               Welcome back{memory.lastSeenAgo() ? ` · last seen ${memory.lastSeenAgo()}` : ''}
+              {styleMem?.hasData && <span className="learning-indicator" style={{ marginLeft: 8 }}><span className="learning-dot" /> Learning</span>}
             </p>
           ) : (
             <p className="home-returning">Welcome to your personal style studio</p>
@@ -228,6 +261,30 @@ export default function HomeScreen({ memory, dna, onNavigate }) {
           )}
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════
+         MILESTONE: Style Journey Celebrations
+         ═══════════════════════════════════════════════════════════ */}
+      {showMilestone && (() => {
+        const total = styleMem?.memory?.totalSaves || 0;
+        if (total === 0) return null;
+        const milestone = total === 1 ? { icon: '🌟', title: 'First Look Saved!', text: 'Your style journey has begun. FashionGPT is starting to learn what you love.' }
+          : total === 5 ? { icon: '🔥', title: '5 Looks Saved!', text: 'FashionGPT is getting to know your style. Each save makes recommendations smarter.' }
+          : total === 10 ? { icon: '🏆', title: 'Double Digits!', text: '10 looks saved — you\'re building a serious style library.' }
+          : total === 25 ? { icon: '👑', title: 'Style Icon!', text: '25 looks! Your FashionGPT style profile is fully developed.' }
+          : null;
+        if (!milestone) return null;
+        return (
+          <div className="milestone-banner">
+            <span className="milestone-icon">{milestone.icon}</span>
+            <div className="milestone-content">
+              <span className="milestone-title">{milestone.title}</span>
+              <span className="milestone-text">{milestone.text}</span>
+            </div>
+            <button className="milestone-dismiss" onClick={() => setShowMilestone(false)}>✕</button>
+          </div>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════════════════════════
          SECTION 5: STYLE PROGRESS

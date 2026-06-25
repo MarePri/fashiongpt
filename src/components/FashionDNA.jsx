@@ -94,11 +94,10 @@ function FashionDNA({ archetypes, selectedArchetype, dnaResult, dnaLoading, buil
 
       {!dnaResult ? (
         <>
-          <div className="dna-intro-card">
-            <div className="dna-intro-icon">🧬</div>
-            <div className="dna-intro-text">
-              FashionGPT analyzes your style preferences to build a complete style personality profile — including your primary archetype, strengths, blind spots, and personalized outfit formulas.
-            </div>
+          <div className="empty-state-personality" style={{ padding: '20px 0' }}>
+            <span className="empty-state-icon">🧬</span>
+            <h3>Discover Your Style DNA</h3>
+            <p>FashionGPT builds a complete style personality profile — your archetype, strengths, blind spots, color palette, and personalized outfit formulas. Pick an archetype to begin.</p>
           </div>
 
           <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Pick your style archetype:</div>

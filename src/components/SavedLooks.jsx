@@ -9,7 +9,7 @@ import StyleMemoryPanel from './StyleMemoryPanel.jsx';
  * SavedLooks — displays user's saved outfits with rating and removal.
  * Reads/writes directly to LocalStorage via useSavedOutfits hook.
  */
-function SavedLooks() {
+function SavedLooks({ onNavigate }) {
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'rated' | 'unrated'
   const { savedOutfits, removeOutfit, rateOutfit } = useSavedOutfitsContext();
@@ -43,9 +43,13 @@ function SavedLooks() {
       </div>
 
       {savedOutfits.length === 0 ? (
-        <div className="empty-state">
-          <div className="icon">👗</div>
-          <p>No saved looks yet. Go to the Outfit tab to generate and save your first look!</p>
+        <div className="empty-state-animated">
+          <span className="empty-state-icon">👗</span>
+          <h3 className="empty-state-title">Your Style Collection</h3>
+          <p className="empty-state-desc">This is where your favorite looks live. Generate outfits, save the ones you love, and build your personal style library.</p>
+          <button className="empty-state-action" onClick={() => onNavigate?.('outfit')}>
+            ✦ Generate Your First Look
+          </button>
         </div>
       ) : (
         <>
