@@ -53,6 +53,35 @@ export default function OutfitGenerator({ memory }) {
   const genTimerRef = useRef(null);
   const errorRef = useRef(null);
 
+  const handleSave = useCallback((index) => {
+    const look = looks[index];
+    if (!look) return;
+    const occasionLabel = OCCASIONS.find(o => o.id === selectedOccasion)?.label || selectedOccasion || 'Custom';
+    saved.saveOutfit(
+      look.outfit?.name || `Styled Look ${index + 1}`,
+      occasionLabel,
+      look,
+      budget ? parseFloat(budget) : null
+    );
+    styleMem?.recordSave(look, selectedOccasion, selectedArchetype);
+
+    // Show save celebration toast
+    const totalSaved = saved.savedOutfits.length + 1;
+    setSaveToast({
+      message: totalSaved === 1
+        ? '🎉 First look saved! Your style journey begins.'
+        : totalSaved === 5
+          ? '🌟 5 looks saved! FashionGPT is learning your style.'
+          : totalSaved === 10
+            ? '🏆 10 looks saved! You\'re building a style library.'
+            : totalSaved === 25
+              ? '👑 25 looks saved! Style icon status.'
+              : '❤️ Look saved!',
+      emoji: totalSaved === 1 ? '🎉' : totalSaved === 5 ? '🌟' : totalSaved === 10 ? '🏆' : totalSaved === 25 ? '👑' : '✓',
+    });
+    setTimeout(() => setSaveToast(null), 3000);
+  }, [looks, selectedOccasion, selectedArchetype, budget, saved, styleMem]);
+
   // Cleanup genTimer on unmount
   useEffect(() => {
     return () => {
@@ -301,35 +330,6 @@ export default function OutfitGenerator({ memory }) {
       setRefiningIndex(null);
     }
   }, [selectedOccasion, selectedArchetype, budget, generator, styleMem]);
-
-  const handleSave = useCallback((index) => {
-    const look = looks[index];
-    if (!look) return;
-    const occasionLabel = OCCASIONS.find(o => o.id === selectedOccasion)?.label || selectedOccasion || 'Custom';
-    saved.saveOutfit(
-      look.outfit?.name || `Styled Look ${index + 1}`,
-      occasionLabel,
-      look,
-      budget ? parseFloat(budget) : null
-    );
-    styleMem?.recordSave(look, selectedOccasion, selectedArchetype);
-
-    // Show save celebration toast
-    const totalSaved = saved.savedOutfits.length + 1;
-    setSaveToast({
-      message: totalSaved === 1
-        ? '🎉 First look saved! Your style journey begins.'
-        : totalSaved === 5
-          ? '🌟 5 looks saved! FashionGPT is learning your style.'
-          : totalSaved === 10
-            ? '🏆 10 looks saved! You\'re building a style library.'
-            : totalSaved === 25
-              ? '👑 25 looks saved! Style icon status.'
-              : '❤️ Look saved!',
-      emoji: totalSaved === 1 ? '🎉' : totalSaved === 5 ? '🌟' : totalSaved === 10 ? '🏆' : totalSaved === 25 ? '👑' : '✓',
-    });
-    setTimeout(() => setSaveToast(null), 3000);
-  }, [looks, selectedOccasion, selectedArchetype, budget, saved, styleMem]);
 
   const handleRate = useCallback((id, rating) => {
     saved.rateOutfit(id, rating);

@@ -1,48 +1,29 @@
 # FashionGPT Project Context
 
 ## Environment
-- JSX + TS, Vite v5.4.21, build: `npx.cmd vite build`
-- 97 modules, 0 errors (last verified)
-- 9 tabs: Home, Outfit, Saved, Discover, DNA, Trends, Chat, Capsule, Evolution
+- JSX + TS, Vite v5.4.21
+- Build: `npx.cmd vite build` — **97 modules, 0 errors, 0 warnings**
+- Dev server: `http://localhost:5174/`
+- Port 5173 in use, auto-fallback to 5174
 
-## Completed Work
+## What Was Done (This Session)
 
-### M1: First 100 Users UX Fixes
-13/13 issues — bugs, weather, celebration animations, onboarding, empty states.
+### Phases M2–M6: Explainable AI Stylist Upgrade
 
-### Phase 6: Portfolio Polish
-7/7 — seed data, offline mode, keyboard shortcuts, print CSS, splash screen, quick generate, empty states. Plus SYNC-2 bugfix (Promise.all reference).
+| Phase | Deliverable | Status |
+|-------|-------------|--------|
+| M2 | `src/rules/` (6 files) — Rule-based engine orchestrator | ✅ Done |
+| M3 | `InteractiveOutfitBuilder.jsx` — swap items/formality/color | ✅ Done |
+| M4 | `StyleCoachInsight.jsx` — educational insight cards | ✅ Done |
+| M5 | `OutfitBattle.jsx` — side-by-side compare + Pick Winner | ✅ Done |
+| M6 | `StyleEvolution.jsx` — preference dashboard tab | ✅ Done |
 
-### M2: Rule-Based Outfit Engine (6 files)
-- `src/rules/` — styleRules, occasionRules, weatherRules, colorRules, outfitEngine (orchestrator), index
-- Deterministic 3-look generation with scoring, critique, explanations
-- Wired as fallback in `outfitGenerator.ts` when AI orchestrator fails
+### Key Stats
+- **33 files changed, 5,975 lines added** since last commit
+- **2 commits pushed**: `52ace85` (features) → `18d0df7` (optimization)
+- **Optimizations**: Replaced dynamic imports with static (eliminated 5 build warnings), added React.memo to 3 components
 
-### M3: Interactive Outfit Builder
-- `InteractiveOutfitBuilder.jsx` — swap items, formality slide, color swap, live scores
-- `modifyOutfit()` engine in outfitEngine.ts (7 actions)
-- Customize button in look tabs on OutfitGenerator
+### Running on port 5174
+Server has been up for ~36 min.
 
-### M4: Style Coach
-- `StyleCoachInsight.jsx` — 5-6 educational insight cards per look
-- Explains occasion fit, color harmony, style coherence, trends, weather
-- Replaced old "Expert Critique" toggle
-
-### M5: Outfit Battle
-- `OutfitBattle.jsx` — 3-card grid, dimension compare table, Pick Winner
-- Replaced old basic compare view
-
-### M6: Style Evolution
-- `StyleEvolution.jsx` — dashboard: top brands/categories/colors/occasions/archetypes
-- Saved looks gallery, avg scores/prices, clear data
-- "Evolution" tab added to App.jsx sidebar
-
-### Build: 97 modules, 0 errors ✓
-### Committed: `52ace85` — pushed to origin/main ✓
-
-## Key Files
-- `src/services/outfitGenerator.ts` — main flow, now has rule engine fallback
-- `src/rules/outfitEngine.ts` — rule orchestrator, modifyOutfit
-- `src/components/OutfitGenerator.jsx` — wired with builder, coach, battle
-- `src/App.jsx` — routing for all 9 tabs
-- `src/index.css` — ~2900 lines, all component styles
+## No Pending Tasks
