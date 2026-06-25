@@ -9,7 +9,7 @@ import React, { useState, useMemo } from 'react';
  * - "Pick Winner" mechanic with celebration
  * - Winner tracking with style memory integration
  */
-export default function OutfitBattle({ looks, styleCategories, onPickWinner, onRegenerate }) {
+const OutfitBattle = React.memo(function OutfitBattle({ looks, styleCategories, onPickWinner, onRegenerate }) {
   const [winnerIndex, setWinnerIndex] = useState(null);
   const [showDimensionCompare, setShowDimensionCompare] = useState(false);
 
@@ -203,7 +203,9 @@ export default function OutfitBattle({ looks, styleCategories, onPickWinner, onR
       </div>
     </div>
   );
-}
+});
+
+export default OutfitBattle;
 
 function dimLabel(key) {
   const labels = {

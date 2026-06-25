@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { modifyOutfit } from '../rules/outfitEngine';
 
 /**
  * InteractiveOutfitBuilder — lets users tweak and customize a generated outfit.
@@ -9,7 +10,7 @@ import React, { useState, useCallback } from 'react';
  * - Color swap (replaces the most discordant color item with a neutral)
  * - Real-time scoring after each modification
  */
-export default function InteractiveOutfitBuilder({ look, onModify, onClose }) {
+const InteractiveOutfitBuilder = React.memo(function InteractiveOutfitBuilder({ look, onModify, onClose }) {
   const [modifying, setModifying] = useState(null);   // which action is running
   const [formalityLevel, setFormalityLevel] = useState(0); // -1 casual, 0 neutral, +1 formal
   const [modifiedLook, setModifiedLook] = useState(look);
@@ -23,10 +24,9 @@ export default function InteractiveOutfitBuilder({ look, onModify, onClose }) {
   const bags = (modifiedLook?.outfit?.items || []).filter(i => i.cat === 'Bags');
   const accessories = (modifiedLook?.outfit?.items || []).filter(i => i.cat === 'Accessories');
 
-  const handleSwap = useCallback(async (action, label) => {
+  const handleSwap = useCallback((action, label) => {
     setModifying(label);
     try {
-      const { modifyOutfit } = await import('../rules/outfitEngine.ts');
       // Build a minimal EngineOutfitResult from the look
       const input = {
         ...modifiedLook,
@@ -50,9 +50,9 @@ export default function InteractiveOutfitBuilder({ look, onModify, onClose }) {
     }
   }, [modifiedLook, onModify]);
 
-  const handleFormalityChange = useCallback(async (direction) => {
+  const handleFormalityChange = useCallback((direction) => {
     const action = direction === 'more_formal' ? 'more_formal' : 'more_casual';
-    await handleSwap(action, 'Formality');
+    handleSwap(action, 'Formality');
     setFormalityLevel(prev => {
       if (direction === 'more_formal') return Math.min(prev + 1, 1);
       return Math.max(prev - 1, -1);
@@ -250,4 +250,6 @@ export default function InteractiveOutfitBuilder({ look, onModify, onClose }) {
       )}
     </div>
   );
-}
+});
+
+export default InteractiveOutfitBuilder;

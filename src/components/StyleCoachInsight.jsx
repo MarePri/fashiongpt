@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { ARCHETYPE_PROFILES } from '../rules/styleRules';
+import { OCCASION_RULES } from '../rules/occasionRules';
 
 /**
  * StyleCoachInsight — Educational insight cards showing *why* an outfit works.
@@ -9,24 +11,11 @@ import React, { useState, useEffect, useMemo } from 'react';
  * - Color harmony principles at play
  * - Occasion-appropriate dressing tips
  */
-export default function StyleCoachInsight({ critique, styleScore, weatherContext, occasion, archetypeId }) {
-  const [rulesData, setRulesData] = useState(null);
+const StyleCoachInsight = React.memo(function StyleCoachInsight({ critique, styleScore, weatherContext, occasion, archetypeId }) {
   const [activeCard, setActiveCard] = useState(null);
 
-  // Load rule data for educational content
-  useEffect(() => {
-    Promise.all([
-      import('../rules/styleRules.ts').then(m => m.ARCHETYPE_PROFILES || {}).catch(() => ({})),
-      import('../rules/occasionRules.ts').then(m => m.OCCASION_RULES || {}).catch(() => ({})),
-      import('../rules/colorRules.ts').then(m => ({ computeColorScore: m.computeColorScore, scoreColorPair: m.scoreColorPair })).catch(() => ({})),
-      import('../rules/weatherRules.ts').then(m => ({ getWeatherInfluence: m.getWeatherInfluence })).catch(() => ({})),
-    ]).then(([archetypes, occasions, colorData]) => {
-      setRulesData({ archetypes, occasions, ...colorData });
-    });
-  }, []);
-
   const scores = critique?.scores || {};
-  const insights = useMemo(() => generateInsights(scores, styleScore, weatherContext, occasion, archetypeId, rulesData), [scores, styleScore, weatherContext, occasion, archetypeId, rulesData]);
+  const insights = useMemo(() => generateInsights(scores, styleScore, weatherContext, occasion, archetypeId), [scores, styleScore, weatherContext, occasion, archetypeId]);
 
   return (
     <div className="style-coach">
@@ -75,22 +64,24 @@ export default function StyleCoachInsight({ critique, styleScore, weatherContext
       </div>
 
       {/* Archetype personality note */}
-      {archetypeId && rulesData?.archetypes?.[archetypeId] && (
+      {archetypeId && ARCHETYPE_PROFILES[archetypeId] && (
         <div className="style-coach-footer">
           <span className="style-coach-footer-icon">👤</span>
           <span className="style-coach-footer-text">
-            Your <strong>{rulesData.archetypes[archetypeId].description}</strong> style profile influences these choices.
+            Your <strong>{ARCHETYPE_PROFILES[archetypeId].description}</strong> style profile influences these choices.
             Each look is tailored to your preferences.
           </span>
         </div>
       )}
     </div>
   );
-}
+});
+
+export default StyleCoachInsight;
 
 // ─── Insight Generation ───────────────────────────────────────────────────
 
-function generateInsights(scores, styleScore, weatherContext, occasion, archetypeId, rulesData) {
+function generateInsights(scores, styleScore, weatherContext, occasion, archetypeId) {
   const cards = [];
 
   // 1. Overall verdict card
