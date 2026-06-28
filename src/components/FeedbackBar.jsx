@@ -1,48 +1,30 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 
 /**
- * FeedbackBar — Quick emotional feedback buttons.
- * 
- * After every outfit generation or saved look review, the user can react with:
- * 😍 Love It — strong positive signal
- * 🙂 Like It — positive signal
- * 👎 Not For Me — negative signal
+ * FeedbackBar — Visual emotional feedback.
+ * No text notifications. No "FashionGPT Learned" messages.
+ * Just animated buttons that show delight through motion.
  *
- * Also shows a learning notification when feedback is recorded.
+ * Each reaction animates the button and briefly shows a score increment
+ * to signal "this was recorded" without a single word of feedback text.
  */
 export default function FeedbackBar({ outfit, onFeedback, compact }) {
   const [selected, setSelected] = useState(null);
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationText, setNotificationText] = useState('');
+  const [pulseId, setPulseId] = useState(0);
+  const timerRef = useRef(null);
 
-  const handleFeedback = useCallback((type, label) => {
+  const handleFeedback = useCallback((type) => {
+    // Clear any pending timer
+    if (timerRef.current) clearTimeout(timerRef.current);
+
     setSelected(type);
+    setPulseId(prev => prev + 1);
     onFeedback?.(type);
 
-    // Show learning notification
-    const messages = {
-      love: [
-        "FashionGPT will find more looks like this! ❤️",
-        "Saved to your style memory! You love this aesthetic.",
-        "Great taste! Similar looks will appear in your recommendations.",
-      ],
-      like: [
-        "FashionGPT is learning your preferences ✨",
-        "Noted! This style is going into your profile.",
-        "Got it! More styles like this in the future.",
-      ],
-      dislike: [
-        "Noted! FashionGPT will avoid similar looks.",
-        "Feedback recorded — your style memory gets sharper.",
-        "Thanks! This helps FashionGPT understand you better.",
-      ],
-    };
-
-    const msgs = messages[type] || messages.like;
-    setNotificationText(msgs[Math.floor(Math.random() * msgs.length)]);
-
-    setShowNotification(true);
-    setTimeout(() => setShowNotification(false), 3000);
+    // Reset after animation completes
+    timerRef.current = setTimeout(() => {
+      setSelected(null);
+    }, 1800);
   }, [onFeedback]);
 
   const buttons = [
@@ -51,53 +33,35 @@ export default function FeedbackBar({ outfit, onFeedback, compact }) {
     { type: 'dislike', icon: '👎', label: 'Not For Me', color: 'var(--down)' },
   ];
 
-  if (compact) {
-    return (
-      <div className="fb-compact">
-        {buttons.map(btn => (
-          <button
-            key={btn.type}
-            className={`fb-btn fb-btn-compact${selected === btn.type ? ' selected' : ''}`}
-            onClick={() => handleFeedback(btn.type, btn.label)}
-            title={btn.label}
-          >
-            {btn.icon}
-          </button>
-        ))}
-        {showNotification && (
-          <div className="fb-notification fb-notification-inline">
-            <span className="fb-notif-icon">✨</span>
-            <span className="fb-notif-text">{notificationText}</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="fb-bar">
-      <div className="fb-label">How did this look feel?</div>
+    <div className={`fb-bar${compact ? ' fb-bar-compact' : ''}`}>
+      {!compact && <div className="fb-label">How does this look feel?</div>}
       <div className="fb-buttons">
-        {buttons.map(btn => (
-          <button
-            key={btn.type}
-            className={`fb-btn${selected === btn.type ? ' selected' : ''}`}
-            onClick={() => handleFeedback(btn.type, btn.label)}
-          >
-            <span className="fb-btn-icon">{btn.icon}</span>
-            <span className="fb-btn-label">{btn.label}</span>
-          </button>
-        ))}
+        {buttons.map(btn => {
+          const isSelected = selected === btn.type;
+          return (
+            <button
+              key={btn.type}
+              className={`fb-btn${isSelected ? ' selected' : ''}${compact ? ' fb-btn-compact' : ''}`}
+              onClick={() => handleFeedback(btn.type)}
+              style={isSelected ? { '--fb-color': btn.color } : {}}
+              title={btn.label}
+            >
+              <span className={`fb-btn-icon${isSelected ? ' fb-btn-icon-pulse' : ''}`}>
+                {btn.icon}
+              </span>
+              {!compact && <span className="fb-btn-label">{btn.label}</span>}
+              {/* Visual pulse ring — animates on selection */}
+              {isSelected && <span className="fb-pulse-ring" />}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Learning notification */}
-      {showNotification && (
-        <div className="fb-notification">
-          <span className="fb-notif-icon">🧠</span>
-          <div className="fb-notif-content">
-            <span className="fb-notif-title">FashionGPT Learned</span>
-            <span className="fb-notif-text">{notificationText}</span>
-          </div>
+      {/* Score increment indicator — visual-only, no text */}
+      {selected && (
+        <div className="fb-score-flash" key={pulseId}>
+          <div className={`fb-score-dot ${selected}`} />
         </div>
       )}
     </div>

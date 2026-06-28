@@ -1,66 +1,67 @@
 # Project Context
 
 ## Environment
-- Language: JavaScript (React 18 + JSX)
-- Runtime: Node.js (via Vite v5.4.21)
-- Build: `npm run build` (Vite)
-- Test: No test runner configured
-- Package Manager: npm
+- React 18 + TypeScript 6, Vite v5.4.21
+- Port: 5173 (dev server running in background: `job_0cda4d4d`)
+- Build: `npm run build` passes with 0 errors
+- Git: `origin/main` (2 commits ahead: e91e925, 356d73e)
 
-## Project Type
-- [x] Application (Web — React SPA)
-- Name: FashionGPT — AI Personal Stylist
-- Port: localhost:5174 (5173 in use)
+## Navigation (post-refactor, commit e91e925)
+- **5 tabs**: Home, Create, Wardrobe, Discover, Profile
+- HomeScreen: greeting → weather → hero CTA → quick gen → faves → tip
+- Wardrobe.jsx: SavedLooks + CapsuleWardrobe + StyleMemoryPanel (sub-nav)
+- Profile.jsx: FashionDNA + StyleEvolution (sub-nav)
+- Discover: Discovery(archetypes) + TrendsRadar in one scroll
 
-## Infrastructure
-- Container: Docker (Dockerfile present but not used in dev)
-- CI/CD: None detected
-- Cloud: None
+## Visible Reasoning System (post-refactor, commit 356d73e)
 
-## Structure
-- Source: `src/`
-- Components: `src/components/` (29+ files)
-- Hooks: `src/hooks/` (12 files, including 2 context providers)
-- Services: `src/services/` (6 files: weather, recommendations, offlineEngine)
-- Rules: `src/rules/` (6 rule engines: color, style, brand, category, occasion, outfit)
-- Data: `src/data/` (8 seed datasets: occasions, trends, archetypes, prompts, brands, garments, etc.)
-- Entry: `src/App.jsx` → `src/main.jsx`
+### GeneratingAnimation.jsx
+- 6 reasoning stages replace 4 generic ones:
+  1. 🎯 Analyzing Occasion — formality, vibe, context
+  2. 🧬 Matching Style DNA — archetype profile + saved count
+  3. 🌤️ Checking Weather — temp, condition, recommendation
+  4. 🎨 Comparing Color Harmony — palette pairings
+  5. 👔 Selecting Outfit Formula — silhouette × budget × versatility
+  6. ⭐ Scoring Confidence — 5-dimension matrix
+- Detail text rotates every 1.8s per stage (living "thinking" feel)
+- Progress bar + stage counter (e.g. "Step 3 of 6 · 42%")
+- Receives `context` prop (occasion, archetype, weather, budget, savedCount)
 
-## Navigation Architecture (post-refactor)
-- **5 core tabs**: Home, Create, Wardrobe, Discover, Profile
-- **HomeScreen**: Streamlined — greeting, weather, hero CTA, quick generate, recent faves, style tip
-- **OutfitGenerator** (tab: "create"): The hero feature — 3 outfits per generation
-- **Wardrobe.jsx** (new): Merges SavedLooks + CapsuleWardrobe + StyleMemoryPanel with sub-nav
-- **Profile.jsx** (new): Merges FashionDNA + StyleEvolution with sub-nav
-- **Discover tab**: Discovery (archetypes) + TrendsRadar in one scroll view
+### OutfitGenerator.jsx
+- `buildOutfitReasoning()` function (~200 lines) generates client-side reasoning:
+  - `chosenFor`: why this look was selected
+  - `solves`: what problem it addresses
+  - `rejectedAlternatives`: 2 counterfactuals with rejection reasons
+  - `confidenceBreakdown`: 5 dimensions each with score + text reason
+- Reasoning injected into each look object after generation completes
+- `genContext` passed to GeneratingAnimation for live detail text
+- All data-derived — zero API calls
 
-## Key State
-- `useMemory()`: Core user memory (lastVisit, lastTab, lastInputs, lastSeenAgo())
-- `useFashionDNA()`: Style DNA analysis (archetype, color/brand/category signals)
-- `useCapsuleWardrobe()`: Capsule wardrobe builder
-- `StyleMemoryContext`: Shared context for style learning signals
-- `SavedOutfitsContext`: Shared context for saved outfits
+### OutfitCard.jsx
+- SVG confidence ring at top (overall score + High/Moderate/Low label)
+- Reasoning banners: "Why this was chosen" + "What this solves"
+- Auto-expanded confidence breakdown with per-dimension reasoning text
+- Rejected alternatives section (collapsible with Why This Works)
+- Falls back to legacy score display when no reasoning data present
 
-## Data Flow
-- Static data-driven (seed datasets in src/data/)
-- Rule engines produce deterministic outfit recommendations
-- WeatherWidget uses navigator.geolocation + free API
-- OfflineEngine fallback for demo mode
+### index.css additions (~120 lines)
+- `.outfit-confidence-meter` + ring SVG styles
+- `.outfit-reasoning-banner` (chosen/solves)
+- `.outfit-confidence-row` + `.outfit-confidence-row-reason`
+- `.outfit-rejected-section` (alternatives)
+- `.og-gen-detail` (live thinking text)
+- `.og-gen-status` (stage counter)
 
-## CSS
-- Single `src/index.css` (~3747 lines pre-refactor, now ~3970)
-- CSS custom properties for theming (--accent: #C9826B, --card, --surface, etc.)
-- No CSS-in-JS or CSS modules
+## Current Status
+- Server is running on port 5173 (background task `job_0cda4d4d`)
+- Build verified clean at last commit
+- All tasks complete
 
-## Recent Changes (commit e91e925)
-- Rewrote App.jsx: 9 tabs → 5, removed unused lazy imports (ChatPanel, StyleEvolution, CapsuleWardrobe, FashionDNA as standalone)
-- Created Wardrobe.jsx (merged SavedLooks + CapsuleWardrobe + StyleMemoryPanel with sub-nav)
-- Created Profile.jsx (merged FashionDNA + StyleEvolution with sub-nav)
-- Rewrote HomeScreen.jsx: reduced from 13 sections to 5
-- Added CSS: hero card, quick gen, wardrobe/profile sub-nav, discover divider
-- Removed: ChatPanel from tabs (integrated into Create flow presets), StyleEvolution as standalone, CapsuleWardrobe as standalone
+## Pending Tasks
+- None. Mission complete.
 
-## Notes
-- ChatPanel quick-action presets (wedding, date, city break) intended to be integrated into OutfitGenerator as preset options in future iteration
-- Discover tab now combines Discovery + TrendsRadar in one scroll view with a styled divider
-- First-time visitors land on Home; returning users land on Create
+## Key Files Changed (last commit 356d73e)
+- `src/components/GeneratingAnimation.jsx` — fully rewritten
+- `src/components/OutfitGenerator.jsx` — +buildOutfitReasoning, reasoning injection, context prop
+- `src/components/OutfitCard.jsx` — fully rewritten with reasoning UI
+- `src/index.css` — +120 lines of reasoning/confidence/rejection styles

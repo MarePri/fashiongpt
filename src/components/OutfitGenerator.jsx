@@ -684,6 +684,42 @@ export default function OutfitGenerator({ memory }) {
         </div>
 
         <div className="og-section">
+          {/* Occasion preview — shown when an occasion is selected */}
+          {selectedOccasion && (() => {
+            const occ = OCCASIONS.find(o => o.id === selectedOccasion);
+            if (!occ) return null;
+            const formalityMap = {
+              'casual': 20, 'smart-casual': 40, 'semi-formal': 60, 'formal': 80, 'black-tie': 100,
+            };
+            const formalityScore = formalityMap[occ.formality] || 50;
+            const formalityLabel = occ.formality || 'balanced';
+            return (
+              <div className="og-occasion-preview">
+                <div className="og-occasion-preview-left">
+                  <span className="og-occasion-preview-icon">{occ.icon}</span>
+                  <div className="og-occasion-preview-info">
+                    <span className="og-occasion-preview-name">{occ.label}</span>
+                    <span className="og-occasion-preview-vibe">{occ.vibe}</span>
+                  </div>
+                </div>
+                <div className="og-occasion-preview-right">
+                  <div className="og-formality-meter">
+                    <div className="og-formality-labels">
+                      <span>Casual</span>
+                      <span>Formal</span>
+                    </div>
+                    <div className="og-formality-track">
+                      <div className="og-formality-fill" style={{ width: `${formalityScore}%` }} />
+                      <div className="og-formality-thumb" style={{ left: `${formalityScore}%` }}>
+                        {formalityLabel}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="og-section-title">Your style vibe</div>
           <div className="og-archetype-row">
             {ARCHETYPES.map(a => (
@@ -708,24 +744,52 @@ export default function OutfitGenerator({ memory }) {
 
         <div className="og-section">
           <div className="og-section-title">Budget <span className="og-optional">(optional)</span></div>
-          <div className="og-budget-row">
-            <span className="og-euro">€</span>
-            <input
-              className="og-budget-input"
-              type="number"
-              min="0"
-              step="10"
-              placeholder="No limit"
-              value={budget}
-              onChange={e => setBudget(e.target.value)}
-            />
+          <div className="og-budget-visual">
+            {/* Budget slider */}
+            <div className="og-budget-slider-wrap">
+              <div className="og-budget-tiers">
+                <span className="og-budget-tier" data-tier="budget">Budget</span>
+                <span className="og-budget-tier" data-tier="mid">Mid</span>
+                <span className="og-budget-tier" data-tier="premium">Premium</span>
+                <span className="og-budget-tier" data-tier="luxe">Luxe</span>
+              </div>
+              <div className="og-budget-track">
+                <div className="og-budget-track-bg">
+                  <div className="og-budget-zone budget" />
+                  <div className="og-budget-zone mid" />
+                  <div className="og-budget-zone premium" />
+                  <div className="og-budget-zone luxe" />
+                </div>
+                <input
+                  type="range"
+                  className="og-budget-slider"
+                  min="0"
+                  max="500"
+                  step="10"
+                  value={budget ? Math.min(parseInt(budget), 500) : 0}
+                  onChange={e => setBudget(e.target.value === '0' ? '' : e.target.value)}
+                />
+                <div className="og-budget-thumb-label" style={{
+                  left: `${(budget ? Math.min(parseInt(budget), 500) : 0) / 500 * 100}%`,
+                }}>
+                  {budget ? `€${budget}` : 'Any'}
+                </div>
+              </div>
+            </div>
+            {/* Quick chips */}
             <div className="og-budget-chips">
-              {[50, 100, 150, 200, 300].map(v => (
+              {[
+                { label: 'Any', value: '' },
+                { label: '€50', value: '50' },
+                { label: '€100', value: '100' },
+                { label: '€150', value: '150' },
+                { label: '€300', value: '300' },
+              ].map(v => (
                 <button
-                  key={v}
-                  className={`og-budget-chip${parseFloat(budget) === v ? ' active' : ''}`}
-                  onClick={() => setBudget(budget === String(v) ? '' : String(v))}
-                >€{v}</button>
+                  key={v.value}
+                  className={`og-budget-chip${budget === v.value ? ' active' : ''}`}
+                  onClick={() => setBudget(v.value)}
+                >{v.label}</button>
               ))}
             </div>
           </div>
