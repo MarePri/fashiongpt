@@ -201,6 +201,100 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .outfit-total span { font-size: 12px; color: var(--muted); }
 .outfit-total strong { font-size: 15px; color: var(--text); }
 
+/* ─── Outfit Confidence Meter — Visual ring at top ── */
+.outfit-confidence-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.outfit-confidence-meter.high .outfit-confidence-label { color: var(--up); }
+.outfit-confidence-meter.medium .outfit-confidence-label { color: var(--accent2); }
+.outfit-confidence-meter.low .outfit-confidence-label { color: var(--down); }
+.outfit-confidence-ring { flex-shrink: 0; }
+.outfit-confidence-info { display: flex; flex-direction: column; gap: 1px; }
+.outfit-confidence-label { font-size: 13px; font-weight: 600; }
+.outfit-confidence-sub { font-size: 10px; color: var(--muted); }
+
+/* ─── Reasoning Banners — "Why this was chosen", "What this solves" ── */
+.outfit-reasoning-banner {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(201,130,107,0.06);
+  border-bottom: 1px solid var(--border);
+}
+.outfit-reasoning-solves {
+  background: rgba(148,186,168,0.08);
+}
+.outfit-reasoning-banner-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.outfit-reasoning-banner-text { flex: 1; }
+.outfit-reasoning-banner-text strong { font-size: 11px; font-weight: 600; display: block; margin-bottom: 2px; }
+.outfit-reasoning-banner-text p { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0; }
+
+/* ─── Confidence Breakdown — per-dimension with reasoning text ── */
+.outfit-confidence-row {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.outfit-confidence-row:last-child { border-bottom: none; }
+.outfit-confidence-row-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.outfit-confidence-row-icon { font-size: 14px; }
+.outfit-confidence-row-label { font-size: 11px; font-weight: 500; flex: 1; color: var(--text); }
+.outfit-confidence-row-score {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: right;
+}
+.outfit-confidence-row-score.high { color: var(--up); }
+.outfit-confidence-row-score.mid { color: var(--accent2); }
+.outfit-confidence-row-score.low { color: var(--down); }
+.outfit-confidence-row-bar {
+  height: 4px;
+  background: var(--surface);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.outfit-confidence-row-fill {
+  height: 4px;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+.outfit-confidence-row-reason {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 2px 0 0;
+  font-style: italic;
+}
+
+/* ─── Rejected Alternatives — What FashionGPT considered and dismissed ── */
+.outfit-rejected-section {
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--border);
+}
+.outfit-rejected-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.outfit-rejected-icon { font-size: 12px; color: var(--down); }
+.outfit-rejected-title { font-size: 11px; font-weight: 600; color: var(--muted); }
+.outfit-rejected-item {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+.outfit-rejected-option { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+.outfit-rejected-option-label { font-size: 10px; color: var(--muted); font-weight: 500; }
+.outfit-rejected-option-name { font-size: 11px; font-weight: 600; color: var(--text); }
+.outfit-rejected-reason { font-size: 10px; color: var(--muted); line-height: 1.4; margin: 0; }
+
 /* Chat input */
 .chat-input-wrap { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: rgba(13,13,13,0.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 12px 16px 20px; z-index: 90; }
 .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
@@ -778,6 +872,29 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 /* Breathing progress bar */
 .og-gen-bar-track { height: 3px; background: var(--surface); border-radius: 3px; margin-bottom: 24px; overflow: hidden; }
 .og-gen-bar-fill { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; transition: width 0.3s ease; }
+
+/* Live detail text — shows FashionGPT's current "thought" */
+.og-gen-detail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  min-height: 36px;
+  animation: fadeIn 0.3s ease;
+}
+.og-gen-detail-icon { font-size: 16px; flex-shrink: 0; }
+.og-gen-detail-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  max-width: 400px;
+  text-align: center;
+  transition: opacity 0.3s ease;
+}
+
+/* Stage timing hint */
+.og-gen-status { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
 
 /* Rotating style tip */
 .og-gen-tip { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; animation: fadeIn 0.5s ease; }

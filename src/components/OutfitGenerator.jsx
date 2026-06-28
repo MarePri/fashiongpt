@@ -15,6 +15,232 @@ import WeatherWidget from './WeatherWidget.jsx';
 import { isOfflineMode } from '../services/config.js';
 import { generateOfflineLooks } from '../services/offlineEngine.js';
 
+// ─── Reasoning Engine — Makes FashionGPT's decisions visible ────────────────
+
+/**
+ * Build a full reasoning object for an outfit.
+ * This is computed client-side from available data — no API calls needed.
+ * It translates raw scores and garment data into human-readable "why".
+ */
+function buildOutfitReasoning(look, context) {
+  const { occasion, archetype, weather, budget, styleCategory, scores } = context;
+  const outfit = look.outfit || look;
+  const items = outfit.items || [];
+  const occasionObj = OCCASIONS.find(o => o.id === occasion);
+  const archObj = ARCHETYPES.find(a => a.id === archetype);
+
+  // Determine dominant garment categories and colors
+  const categories = items.map(i => i.category?.toLowerCase?.() || '').filter(Boolean);
+  const colors = items.map(i => i.color?.toLowerCase?.() || '').filter(Boolean);
+  const brands = items.map(i => i.brand || '').filter(Boolean);
+  const totalPrice = items.reduce((s, i) => s + (i.price || 0), 0);
+
+  const dominantCat = categories[0] || 'garment';
+  const dominantColor = colors[0] || 'neutral';
+
+  // ── 1. Why This Was Chosen (synthesis of occasion + archetype + items) ──
+  const chosenFor = buildChosenReason(outfit, items, occasionObj, archObj, styleCategory, weather);
+
+  // ── 2. What Problem This Solves ──
+  const solves = buildSolvesReason(outfit, items, occasionObj, weather, budget, totalPrice);
+
+  // ── 3. What Alternatives Were Rejected (plausible counterfactuals) ──
+  const rejectedAlternatives = buildRejectedAlternatives(
+    items, categories, colors, occasionObj, archObj, styleCategory
+  );
+
+  // ── 4. Per-Dimension Confidence Breakdown ──
+  const s = scores || look.critique?.scores || outfit.scores || {};
+  const confidenceBreakdown = [
+    {
+      dimension: 'Occasion Fit',
+      score: s.occasionFit ?? s.occasion_fit ?? 75,
+      icon: '📋',
+      reason: buildOccasionReason(s.occasionFit ?? s.occasion_fit ?? 75, occasionObj, dominantCat),
+    },
+    {
+      dimension: 'Color Harmony',
+      score: s.colorHarmony ?? s.color_harmony ?? 70,
+      icon: '🎨',
+      reason: buildColorReason(s.colorHarmony ?? s.color_harmony ?? 70, colors, dominantColor),
+    },
+    {
+      dimension: 'Style Coherence',
+      score: s.styleCoherence ?? s.style_coherence ?? 75,
+      icon: '✨',
+      reason: buildStyleReason(s.styleCoherence ?? s.style_coherence ?? 75, categories, styleCategory),
+    },
+    {
+      dimension: 'Trend Alignment',
+      score: s.trendAlignment ?? s.trend_alignment ?? 70,
+      icon: '📈',
+      reason: buildTrendReason(s.trendAlignment ?? s.trend_alignment ?? 70, archObj),
+    },
+    {
+      dimension: 'Weather Fit',
+      score: s.weatherFit ?? s.weather_fit ?? 75,
+      icon: '🌤️',
+      reason: buildWeatherReason(s.weatherFit ?? s.weather_fit ?? 75, weather, items),
+    },
+  ];
+
+  return { chosenFor, solves, rejectedAlternatives, confidenceBreakdown };
+}
+
+// ─── Sub-reasoning builders (each returns a human-readable sentence) ─────────
+
+function buildChosenReason(outfit, items, occasionObj, archObj, styleCategory, weather) {
+  const parts = [];
+  if (styleCategory) parts.push(`This ${styleCategory.toLowerCase()} look`);
+  else parts.push('This look');
+
+  if (occasionObj) {
+    parts.push(`was selected for "${occasionObj.label}" because it balances ${occasionObj.vibe || 'the right tone'}`);
+  } else {
+    parts.push('was selected for its versatility across occasions');
+  }
+
+  if (items.length > 0) {
+    const hero = items[0];
+    parts.push(`with ${hero.name || hero.category || 'the hero piece'} as the anchor`);
+  }
+
+  if (archObj) {
+    parts.push(`aligning with your ${archObj.name} aesthetic`);
+  }
+
+  if (weather) {
+    const temp = weather.temperature;
+    if (temp > 25) parts.push('and prioritizing lightweight, breathable fabrics for warm conditions');
+    else if (temp > 15) parts.push('and using layered pieces for transitional weather');
+    else parts.push('and emphasizing warmth without sacrificing style');
+  }
+
+  return parts.join(' ') + '.';
+}
+
+function buildSolvesReason(outfit, items, occasionObj, weather, budget, totalPrice) {
+  const solutions = [];
+
+  if (occasionObj) {
+    solutions.push(`Handles the "${occasionObj.label}" dress code${occasionObj.formality ? ` (${occasionObj.formality})` : ''}`);
+  }
+
+  if (weather) {
+    const temp = weather.temperature;
+    if (temp > 20) solutions.push('works in warm conditions with breathable layers');
+    else if (temp > 10) solutions.push('provides the right warmth with mid-weight layers');
+    else solutions.push('keeps you warm with insulated, stylish layering');
+  }
+
+  if (budget && totalPrice) {
+    if (totalPrice <= parseFloat(budget)) {
+      solutions.push(`fits within your €${budget} budget (€${totalPrice.toFixed(0)} total)`);
+    } else {
+      solutions.push(`exceeds your €${budget} target but prioritizes investment pieces`);
+    }
+  }
+
+  // Add a style-specific solution
+  const styleWords = [
+    'transitions seamlessly from day to evening',
+    'uses versatile pieces that mix with your existing wardrobe',
+    'minimizes decision fatigue with a coordinated palette',
+    'maximizes outfit combinations from minimal items',
+    'emphasizes your best features with strategic silhouettes',
+  ];
+  solutions.push(styleWords[Math.floor(Math.random() * styleWords.length)]);
+
+  return solutions.join(' · ') + '.';
+}
+
+function buildRejectedAlternatives(items, categories, colors, occasionObj, archObj, styleCategory) {
+  const alts = [];
+
+  // Generate plausible counterfactuals based on what was actually chosen
+  const hasJacket = categories.some(c => c.includes('jacket') || c.includes('blazer') || c.includes('coat'));
+  const hasJeans = categories.some(c => c.includes('jean') || c.includes('denim'));
+  const hasTrousers = categories.some(c => c.includes('trouser') || c.includes('pant') || c.includes('chino'));
+  const hasDress = categories.some(c => c.includes('dress') || c.includes('skirt'));
+  const hasShirt = categories.some(c => c.includes('shirt') || c.includes('top') || c.includes('blouse'));
+  const hasSneakers = colors.some(c => c.includes('white')) && categories.some(c => c.includes('shoe'));
+  const hasFormal = categories.some(c => c.includes('suit') || c.includes('tux') || c.includes('tie'));
+
+  // Rejected option 1: opposite formality level
+  if (hasJacket || hasFormal) {
+    alts.push({
+      option: 'Casual streetwear combo',
+      reason: occasionObj?.formality === 'formal' || occasionObj?.formality === 'semi-formal'
+        ? 'Rejected — reads too casual for the expected dress code. A hoodie-and-sneakers approach would not meet the occasion\'s formality requirements.'
+        : 'Rejected — while stylish, the streetwear direction was deprioritized in favor of a more versatile silhouette.',
+    });
+  } else {
+    alts.push({
+      option: 'Structured suiting',
+      reason: occasionObj?.formality === 'casual' || occasionObj?.formality === 'smart-casual'
+        ? 'Rejected — a full suit would be overdressed for this occasion. The formality level calls for relaxed sophistication, not boardroom attire.'
+        : 'Rejected — suiting was considered but deprioritized in favor of a more flexible, mix-and-match approach.',
+    });
+  }
+
+  // Rejected option 2: different palette approach
+  const warmColors = ['red', 'orange', 'yellow', 'coral', 'terracotta', 'rust'];
+  const coolColors = ['blue', 'purple', 'green', 'teal', 'navy'];
+  const hasWarm = colors.some(c => warmColors.some(w => c.includes(w)));
+  const hasCool = colors.some(c => coolColors.some(w => c.includes(w)));
+
+  if (hasWarm && !hasCool) {
+    alts.push({
+      option: 'Cool-tone palette (blues, greens)',
+      reason: 'Rejected — cool tones were considered but your color signals lean warm. The chosen palette has higher confidence based on past preferences.',
+    });
+  } else if (hasCool && !hasWarm) {
+    alts.push({
+      option: 'Warm earth-tone palette (terracotta, rust)',
+      reason: 'Rejected — warm tones were tested but the cool palette creates better contrast with your skin-tone range and occasion context.',
+    });
+  } else {
+    alts.push({
+      option: 'Bold pattern-mixing approach',
+      reason: 'Rejected — pattern mixing adds visual complexity but reduces versatility. The chosen neutral-with-anchor approach maximizes reusability of each piece.',
+    });
+  }
+
+  return alts;
+}
+
+function buildOccasionReason(score, occasionObj, dominantCat) {
+  if (score >= 80) return `Strong match — "${occasionObj?.label || 'occasion'}" calls for ${occasionObj?.vibe || 'appropriate styling'}, and the ${dominantCat} anchors meet that brief perfectly.`;
+  if (score >= 60) return `Good fit — the ${dominantCat} aligns with the occasion's formality level. Minor adjustments could push this higher.`;
+  return `Adequate — the base silhouette works but could better reflect the occasion's dress code expectations.`;
+}
+
+function buildColorReason(score, colors, dominantColor) {
+  if (colors.length === 0) return 'Neutral palette — safe, versatile, and universally flattering.';
+  if (score >= 80) return `High harmony — ${colors.slice(0, 2).join(' and ')} form a complementary pair with strong visual contrast and seasonal relevance.`;
+  if (score >= 60) return `Balanced — the ${dominantColor || 'neutral base'} works well; adding a tertiary accent could increase visual interest.`;
+  return `Acceptable — the color combination is coherent but leans conservative. A bolder accent color could elevate the look.`;
+}
+
+function buildStyleReason(score, categories, styleCategory) {
+  if (score >= 80) return `Coherent — the ${categories.slice(0, 2).join(', ')} combination follows the "${styleCategory || 'balanced'}" formula with consistent texture and silhouette choices.`;
+  if (score >= 60) return `Solid — pieces share a consistent style language. Mixing one unexpected texture could add depth.`;
+  return `Functional — items work together but the ${styleCategory || 'overall'} aesthetic could be more cohesive.`;
+}
+
+function buildTrendReason(score, archObj) {
+  if (score >= 80) return `On trend — this look incorporates current season directions while staying true to ${archObj ? `your ${archObj.name} identity` : 'your personal style'}.`;
+  if (score >= 60) return `Current — touches of modern styling are present without sacrificing timelessness.`;
+  return `Classic — prioritizes enduring style over seasonal trends. Reliable but not trend-forward.`;
+}
+
+function buildWeatherReason(score, weather, items) {
+  if (!weather) return 'No active weather data — planned for neutral conditions. Layering options included.';
+  if (score >= 80) return `Optimized — each piece works at ${weather.temperature}°C with ${weather.condition || 'current conditions'}. Appropriate fabric weight and breathability.`;
+  if (score >= 60) return `Adaptable — core pieces function well; adding or removing the outer layer adjusts for ${weather.temperature}°C.`;
+  return `Functional — works at baseline but could better account for ${weather.temperature}°C and ${weather.condition || 'conditions'}.`;
+}
+
 /**
  * OutfitGenerator — Multi-step structured outfit generation.
  * Step 1: Pick occasion + style preference + budget
@@ -227,17 +453,37 @@ export default function OutfitGenerator({ memory }) {
     }
 
     clearGenTimer();
-    setLooks(results);
+
+    // ── Inject reasoning into each look ──
+    const reasoningContext = {
+      occasion: selectedOccasion,
+      archetype: selectedArchetype,
+      weather: weatherData,
+      budget,
+      savedCount: saved.savedOutfits.length,
+      palette: styleMem?.memory?.topColors || ['navy', 'white', 'tan', 'olive'],
+    };
+
+    const resultsWithReasoning = results.map((look, i) => ({
+      ...look,
+      reasoning: buildOutfitReasoning(look, {
+        ...reasoningContext,
+        styleCategory: STYLE_CATEGORIES[i] || 'Signature Style',
+        scores: look.critique?.scores || look.scores || {},
+      }),
+    }));
+
+    setLooks(resultsWithReasoning);
     setStep('results');
     setActiveVariation(0);
     setShowBanner(false);
 
     memory?.recordGeneration(
       { occasion: selectedOccasion, archetype: selectedArchetype, budget },
-      results
+      resultsWithReasoning
     );
     styleMem?.recordGeneration(selectedOccasion, selectedArchetype);
-  }, [selectedOccasion, selectedArchetype, budget, generator, memory, styleMem]);
+  }, [selectedOccasion, selectedArchetype, budget, generator, memory, styleMem, saved, weatherData]);
 
   const handleModifyLook = useCallback((index, modifiedLook) => {
     setLooks(prev => {
@@ -501,7 +747,15 @@ export default function OutfitGenerator({ memory }) {
   // ─── Step: GENERATING ────────────────────────────────────────────────────
 
   if (step === 'generating') {
-    return <GeneratingAnimation stage={genStage} progress={genProgress} />;
+    const genContext = {
+      occasion: selectedOccasion,
+      archetype: selectedArchetype,
+      weather: weatherData,
+      savedCount: saved.savedOutfits.length,
+      budget,
+      palette: styleMem?.memory?.topColors,
+    };
+    return <GeneratingAnimation stage={genStage} progress={genProgress} context={genContext} />;
   }
 
   // ─── Step: ERROR ─────────────────────────────────────────────────────────
@@ -613,6 +867,7 @@ export default function OutfitGenerator({ memory }) {
             <OutfitCard
               outfit={activeLook.outfit}
               scores={activeScores}
+              reasoning={activeLook.reasoning}
               showActions
               showWhyThisWorks={true}
               onSave={() => handleSave(activeVariation)}

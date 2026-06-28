@@ -1,29 +1,66 @@
-# FashionGPT Project Context
+# Project Context
 
 ## Environment
-- JSX + TS, Vite v5.4.21
-- Build: `npx.cmd vite build` — **97 modules, 0 errors, 0 warnings**
-- Dev server: `http://localhost:5174/`
-- Port 5173 in use, auto-fallback to 5174
+- Language: JavaScript (React 18 + JSX)
+- Runtime: Node.js (via Vite v5.4.21)
+- Build: `npm run build` (Vite)
+- Test: No test runner configured
+- Package Manager: npm
 
-## What Was Done (This Session)
+## Project Type
+- [x] Application (Web — React SPA)
+- Name: FashionGPT — AI Personal Stylist
+- Port: localhost:5174 (5173 in use)
 
-### Phases M2–M6: Explainable AI Stylist Upgrade
+## Infrastructure
+- Container: Docker (Dockerfile present but not used in dev)
+- CI/CD: None detected
+- Cloud: None
 
-| Phase | Deliverable | Status |
-|-------|-------------|--------|
-| M2 | `src/rules/` (6 files) — Rule-based engine orchestrator | ✅ Done |
-| M3 | `InteractiveOutfitBuilder.jsx` — swap items/formality/color | ✅ Done |
-| M4 | `StyleCoachInsight.jsx` — educational insight cards | ✅ Done |
-| M5 | `OutfitBattle.jsx` — side-by-side compare + Pick Winner | ✅ Done |
-| M6 | `StyleEvolution.jsx` — preference dashboard tab | ✅ Done |
+## Structure
+- Source: `src/`
+- Components: `src/components/` (29+ files)
+- Hooks: `src/hooks/` (12 files, including 2 context providers)
+- Services: `src/services/` (6 files: weather, recommendations, offlineEngine)
+- Rules: `src/rules/` (6 rule engines: color, style, brand, category, occasion, outfit)
+- Data: `src/data/` (8 seed datasets: occasions, trends, archetypes, prompts, brands, garments, etc.)
+- Entry: `src/App.jsx` → `src/main.jsx`
 
-### Key Stats
-- **33 files changed, 5,975 lines added** since last commit
-- **2 commits pushed**: `52ace85` (features) → `18d0df7` (optimization)
-- **Optimizations**: Replaced dynamic imports with static (eliminated 5 build warnings), added React.memo to 3 components
+## Navigation Architecture (post-refactor)
+- **5 core tabs**: Home, Create, Wardrobe, Discover, Profile
+- **HomeScreen**: Streamlined — greeting, weather, hero CTA, quick generate, recent faves, style tip
+- **OutfitGenerator** (tab: "create"): The hero feature — 3 outfits per generation
+- **Wardrobe.jsx** (new): Merges SavedLooks + CapsuleWardrobe + StyleMemoryPanel with sub-nav
+- **Profile.jsx** (new): Merges FashionDNA + StyleEvolution with sub-nav
+- **Discover tab**: Discovery (archetypes) + TrendsRadar in one scroll view
 
-### Running on port 5174
-Server has been up for ~36 min.
+## Key State
+- `useMemory()`: Core user memory (lastVisit, lastTab, lastInputs, lastSeenAgo())
+- `useFashionDNA()`: Style DNA analysis (archetype, color/brand/category signals)
+- `useCapsuleWardrobe()`: Capsule wardrobe builder
+- `StyleMemoryContext`: Shared context for style learning signals
+- `SavedOutfitsContext`: Shared context for saved outfits
 
-## No Pending Tasks
+## Data Flow
+- Static data-driven (seed datasets in src/data/)
+- Rule engines produce deterministic outfit recommendations
+- WeatherWidget uses navigator.geolocation + free API
+- OfflineEngine fallback for demo mode
+
+## CSS
+- Single `src/index.css` (~3747 lines pre-refactor, now ~3970)
+- CSS custom properties for theming (--accent: #C9826B, --card, --surface, etc.)
+- No CSS-in-JS or CSS modules
+
+## Recent Changes (commit e91e925)
+- Rewrote App.jsx: 9 tabs → 5, removed unused lazy imports (ChatPanel, StyleEvolution, CapsuleWardrobe, FashionDNA as standalone)
+- Created Wardrobe.jsx (merged SavedLooks + CapsuleWardrobe + StyleMemoryPanel with sub-nav)
+- Created Profile.jsx (merged FashionDNA + StyleEvolution with sub-nav)
+- Rewrote HomeScreen.jsx: reduced from 13 sections to 5
+- Added CSS: hero card, quick gen, wardrobe/profile sub-nav, discover divider
+- Removed: ChatPanel from tabs (integrated into Create flow presets), StyleEvolution as standalone, CapsuleWardrobe as standalone
+
+## Notes
+- ChatPanel quick-action presets (wedding, date, city break) intended to be integrated into OutfitGenerator as preset options in future iteration
+- Discover tab now combines Discovery + TrendsRadar in one scroll view with a styled divider
+- First-time visitors land on Home; returning users land on Create
