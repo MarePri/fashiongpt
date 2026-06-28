@@ -8,12 +8,11 @@ import { PROMPTS } from "./data/prompts.js";
 
 // ─── Hooks (always needed, synchronous) ─────────────────────────────────────
 import useMemory from "./hooks/useMemory.js";
-import useChat from "./hooks/useChat.js";
 import useFashionDNA from "./hooks/useFashionDNA.js";
 import useCapsuleWardrobe from "./hooks/useCapsuleWardrobe.js";
 import useKeyboardShortcuts from "./hooks/useKeyboardShortcuts.js";
 
-// ─── Components (static — always visible) ───────────────────────────────────
+// ─── Core UI Components (static — always visible) ───────────────────────────
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import HomeScreen from "./components/HomeScreen.jsx";
@@ -22,30 +21,26 @@ import ShortcutsHelp from "./components/ShortcutsHelp.jsx";
 import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
 import { StyleMemoryProvider } from "./hooks/StyleMemoryContext.jsx";
 
-// ─── Components (lazy — code-split by tab) ──────────────────────────────────
-const OutfitGenerator = lazy(() => import("./components/OutfitGenerator.jsx"));
-const SavedLooks = lazy(() => import("./components/SavedLooks.jsx"));
-const StyleEvolution = lazy(() => import("./components/StyleEvolution.jsx"));
-const Discovery = lazy(() => import("./components/Discovery.jsx"));
-const ChatPanel = lazy(() => import("./components/ChatPanel.jsx"));
-const FashionDNA = lazy(() => import("./components/FashionDNA.jsx"));
-const TrendsRadar = lazy(() => import("./components/TrendsRadar.jsx"));
-const CapsuleWardrobe = lazy(() => import("./components/CapsuleWardrobe.jsx"));
+// ─── New Container Components ────────────────────────────────────────────────
+import Wardrobe from "./components/Wardrobe.jsx";
+import Profile from "./components/Profile.jsx";
 
-// ─── TABS — Home is first (the magic landing screen) ─────────────────────────
+// ─── Components (lazy — code-split) ──────────────────────────────────────────
+const OutfitGenerator = lazy(() => import("./components/OutfitGenerator.jsx"));
+const Discovery = lazy(() => import("./components/Discovery.jsx"));
+const TrendsRadar = lazy(() => import("./components/TrendsRadar.jsx"));
+
+// ─── TABS — 5 core destinations ──────────────────────────────────────────────
+// "Create" is the hero. Every other tab exists to support outfit generation.
 const TABS = [
-  { id: "home", icon: "🏠", label: "Home" },
-  { id: "outfit", icon: "✨", label: "Outfit" },
-  { id: "looks", icon: "❤️", label: "Saved" },
-  { id: "discover", icon: "🌍", label: "Discover" },
-  { id: "dna", icon: "🧬", label: "DNA" },
-  { id: "trends", icon: "📈", label: "Trends" },
-  { id: "chat", icon: "💬", label: "Chat" },
-  { id: "capsule", icon: "🗂", label: "Capsule" },
-  { id: "evolution", icon: "📊", label: "Evolution" },
+  { id: "home",    icon: "🏠", label: "Home" },
+  { id: "create",  icon: "✨", label: "Create" },
+  { id: "wardrobe",icon: "👔", label: "Wardrobe" },
+  { id: "discover",icon: "🌟", label: "Discover" },
+  { id: "profile", icon: "👤", label: "Profile" },
 ];
 
-// ─── Loading Skeleton (shown while lazy chunks load) ──────────────────────────
+// ─── Loading Skeleton ────────────────────────────────────────────────────────
 function TabFallback() {
   return (
     <div className="section-pad">
@@ -62,7 +57,10 @@ function TabFallback() {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function FashionGPT() {
   const memory = useMemory();
-  const [tab, setTab] = useState(() => memory.data.lastTab || "home");
+
+  // First visit → Home. Returning → Create (the hero journey).
+  const defaultTab = memory.data.lastTab || (memory.data.lastVisit ? 'create' : 'home');
+  const [tab, setTab] = useState(defaultTab);
   const [tryLookNonce, setTryLookNonce] = useState(0);
   const [showSplash, setShowSplash] = useState(true);
 
@@ -77,7 +75,6 @@ export default function FashionGPT() {
     onNavigate: handleTabChange,
   });
 
-  const chat = useChat();
   const dna = useFashionDNA();
   const capsule = useCapsuleWardrobe();
 
@@ -104,63 +101,67 @@ export default function FashionGPT() {
       <StyleMemoryProvider>
       <SavedOutfitsProvider>
       <Suspense fallback={<TabFallback />}>
-        {/* HOME — Personal Stylist Dashboard */}
+        {/* ── HOME — Streamlined landing ── */}
         {tab === "home" && (
           <HomeScreen
             memory={memory}
-            dna={dna}
             onNavigate={handleTabChange}
           />
         )}
 
-        {tab === "outfit" && <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />}
-        {tab === "looks" && <SavedLooks onNavigate={handleTabChange} />}
-        {tab === "discover" && <Discovery onTryLook={(archId) => { memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } }); setTryLookNonce(c => c + 1); handleTabChange('outfit'); }} />}
+        {/* ── CREATE — Outfit Generator (the hero) ── */}
+        {tab === "create" && (
+          <OutfitGenerator key={`og-${tryLookNonce}`} memory={memory} />
+        )}
 
-        {tab === "chat" && (
-          <ChatPanel
-            messages={chat.messages}
-            input={chat.input}
-            loading={chat.loading}
-            setInput={chat.setInput}
-            sendMessage={chat.sendMessage}
-            prompts={PROMPTS}
-            chatEndRef={chat.chatEndRef}
+        {/* ── WARDROBE — Saved Looks + Capsule + Memory ── */}
+        {tab === "wardrobe" && (
+          <Wardrobe
+            onNavigate={handleTabChange}
+            capsuleResult={capsule.capsuleResult}
+            capsuleLoading={capsule.capsuleLoading}
+            buildCapsule={capsule.buildCapsule}
+            onResetCapsule={capsule.reset}
           />
         )}
 
-        {tab === "trends" && (
-          <TrendsRadar
-            trends={TRENDS}
-            onTryTrend={(trendName) => {
-              memory.save({ lastTab: 'outfit', lastInputs: { ...(memory.data.lastInputs || {}), trend: trendName } });
-              handleTabChange('outfit');
-            }}
-          />
+        {/* ── DISCOVER — Inspiration: Archetypes + Trends ── */}
+        {tab === "discover" && (
+          <div className="section-pad discover-tab">
+            {/* Style Discovery */}
+            <Discovery
+              onTryLook={(archId) => {
+                memory.save({ lastTab: 'create', lastInputs: { ...(memory.data.lastInputs || {}), archetype: archId } });
+                setTryLookNonce(c => c + 1);
+                handleTabChange('create');
+              }}
+            />
+
+            <div className="discover-divider">
+              <span className="discover-divider-label">Trending Now</span>
+            </div>
+
+            {/* Trend Radar */}
+            <TrendsRadar
+              trends={TRENDS}
+              onTryTrend={(trendName) => {
+                memory.save({ lastTab: 'create', lastInputs: { ...(memory.data.lastInputs || {}), trend: trendName } });
+                handleTabChange('create');
+              }}
+            />
+          </div>
         )}
 
-        {tab === "dna" && (
-          <FashionDNA
+        {/* ── PROFILE — Style DNA + Evolution ── */}
+        {tab === "profile" && (
+          <Profile
             archetypes={ARCHETYPES}
             selectedArchetype={dna.selectedArchetype}
             dnaResult={dna.dnaResult}
             dnaLoading={dna.dnaLoading}
             buildFashionDNA={dna.buildFashionDNA}
-            onReset={dna.reset}
+            onResetDNA={dna.reset}
           />
-        )}
-
-        {tab === "capsule" && (
-          <CapsuleWardrobe
-            capsuleResult={capsule.capsuleResult}
-            capsuleLoading={capsule.capsuleLoading}
-            buildCapsule={capsule.buildCapsule}
-            onReset={capsule.reset}
-          />
-        )}
-
-        {tab === "evolution" && (
-          <StyleEvolution />
         )}
       </Suspense>
       </SavedOutfitsProvider>
