@@ -68,24 +68,50 @@ Rules:
 - Be conversational, warm, and inspiring — like a stylish friend
 - If they ask for an outfit, end with "✦ Outfit built — see below!" and I'll show product cards
 - Keep responses under 200 words but make them feel rich and considered
-- Never be generic. Always be specific to their request.`;
+- Never be generic. Always be specific to their request.
+- After your response, on a NEW LINE, output <<INTENT>> then a JSON object: {"wantsOutfit":true/false,"occasion":"evening"|"casual"|"wedding"|"office"|"date"|"formal"|"vacation"|"sport"|"","budget":0|number}
+  — wantsOutfit: true if they asked for a specific outfit/styling, false for general chat or opinions
+  — occasion: the occasion they're dressing for, empty string if not mentioned
+  — budget: max € they mentioned, 0 if not specified`;
 
       const reply = await callAI(system, msg, 900, controller.signal);
       if (controller.signal.aborted || !mountedRef.current) return;
 
-      const wantsOutfit =
-        msg.toLowerCase().includes('outfit') ||
-        msg.toLowerCase().includes('wear') ||
-        msg.toLowerCase().includes('dress') ||
-        msg.toLowerCase().includes('look') ||
-        reply.toLowerCase().includes('outfit built');
+      // ─── Structured intent classification (from AI reply) ────────────────────
+      let wantsOutfit = false;
+      let occasion = null;
+      let budget = null;
 
-      const outfit = wantsOutfit ? parseOutfitFromProducts(reply, msg) : null;
+      const intentMatch = reply.match(/<<INTENT>>\s*(\{[\s\S]*?\})/);
+      if (intentMatch) {
+        try {
+          const intent = JSON.parse(intentMatch[1]);
+          wantsOutfit = intent.wantsOutfit === true;
+          occasion = intent.occasion || null;
+          budget = typeof intent.budget === 'number' && intent.budget > 0 ? intent.budget : null;
+        } catch {
+          // Structured parse failed — fall through to fallback below
+        }
+      }
+
+      // ─── Fallback: substring detection when structured path fails ────────────
+      if (!intentMatch) {
+        const lower = msg.toLowerCase();
+        wantsOutfit =
+          lower.includes('outfit') ||
+          lower.includes('wear') ||
+          lower.includes('style me') ||
+          lower.includes('what should i') ||
+          reply.toLowerCase().includes('outfit built');
+      }
+
+      const cleanReply = reply.replace(/<<INTENT>>\s*\{.*?\}\s*/s, '').trim();
+      const outfit = wantsOutfit ? parseOutfitFromProducts(cleanReply, occasion || msg, budget) : null;
       if (outfit) {
         outfit.name = 'Your Styled Look';
         outfit.why = 'Curated by FashionGPT based on your request';
       }
-      setMessages(prev => trimHistory([...prev, { role: 'ai', content: reply, outfit }]));
+      setMessages(prev => trimHistory([...prev, { role: 'ai', content: cleanReply, outfit }]));
     } catch (err) {
       if (!mountedRef.current) return;
       const suggestion = err?.message?.includes('fetch') || err?.message?.includes('NetworkError')

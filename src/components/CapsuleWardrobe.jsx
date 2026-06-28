@@ -40,7 +40,7 @@ function CapsuleWardrobe({ capsuleResult, capsuleLoading, buildCapsule, onReset 
           <div className="capsule-grid">
             {capsuleResult.picks.map((p, i) => (
               <div className="capsule-item" key={i}>
-                <div className="capsule-item-icon">{p.img}</div>
+                <img className="capsule-item-icon" src={p.img} alt={p.name} />
                 <div className="capsule-item-name">
                   {p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name}
                 </div>

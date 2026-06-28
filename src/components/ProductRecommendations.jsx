@@ -39,7 +39,7 @@ function ProductRecommendations({ items }) {
 
         return (
           <div className="outfit-item" key={item.id || i}>
-            <div className="outfit-item-icon">{item.img || '👗'}</div>
+            <img className="outfit-item-icon" src={item.img} alt={item.name} />
             <div className="outfit-item-info">
               <div className="outfit-item-name-row">
                 {itemColor && (

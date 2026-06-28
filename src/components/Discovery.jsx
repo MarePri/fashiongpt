@@ -139,7 +139,7 @@ export default function Discovery({ onTryLook }) {
                     <div className="disc-items">
                       {outfit.items.map((item) => (
                         <div key={item.id} className="disc-item">
-                          <span className="disc-item-img">{item.img}</span>
+                          <img className="disc-item-img" src={item.img} alt={item.name} />
                           <span className="disc-item-name">{item.name}</span>
                           <span className="disc-item-brand">{item.brand}</span>
                           <span className="disc-item-price">€{item.price.toFixed(2)}</span>
