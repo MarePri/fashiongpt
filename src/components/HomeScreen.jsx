@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
+<<<<<<< HEAD
+=======
+import DelightWidget from './DelightWidget.jsx';
+>>>>>>> b672a12 (Phase 1: fix dead code and add AI status indicator)
 
 /**
  * HomeScreen — Streamlined landing page.
@@ -89,6 +93,10 @@ export default function HomeScreen({ memory, onNavigate }) {
          WEATHER
          ════════════════════════════════════════════ */}
       <WeatherWidget />
+<<<<<<< HEAD
+=======
+      <DelightWidget />
+>>>>>>> b672a12 (Phase 1: fix dead code and add AI status indicator)
 
       {/* ════════════════════════════════════════════
          HERO: How can I help you dress today?

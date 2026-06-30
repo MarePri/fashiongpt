@@ -23,6 +23,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .nav { position: sticky; top: 0; z-index: 100; background: rgba(13,13,13,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
 .nav-logo { font-family: 'Playfair Display', serif; font-size: 18px; letter-spacing: -0.3px; }
 .nav-logo span { color: var(--accent); }
+<<<<<<< HEAD
+=======
+.nav-header-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.ai-status-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; letter-spacing: 0.2px; white-space: nowrap; }
+.ai-status-live { color: #1a7f4e; background: rgba(26, 127, 78, 0.12); }
+.ai-status-offline { color: #8a6d1f; background: rgba(138, 109, 31, 0.12); }
+>>>>>>> b672a12 (Phase 1: fix dead code and add AI status indicator)
 .nav-tabs { display: flex; gap: 2px; width: 100%; justify-content: space-around; }
 .nav-tab { background: none; border: none; color: var(--muted); font-size: 9px; font-family: 'Inter', sans-serif; padding: 6px 4px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: all 0.2s; flex: 1; max-width: 64px; }
 .nav-tab.active { color: var(--accent); }
