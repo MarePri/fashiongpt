@@ -20,6 +20,7 @@ import SplashScreen from "./components/SplashScreen.jsx";
 import ShortcutsHelp from "./components/ShortcutsHelp.jsx";
 import { SavedOutfitsProvider } from "./hooks/SavedOutfitsContext.jsx";
 import { StyleMemoryProvider } from "./hooks/StyleMemoryContext.jsx";
+import { StyleLearningProvider } from "./hooks/StyleLearningContext.jsx";
 
 // ─── New Container Components ────────────────────────────────────────────────
 import Wardrobe from "./components/Wardrobe.jsx";
@@ -98,6 +99,7 @@ export default function FashionGPT() {
         </button>
       </div>
 
+      <StyleLearningProvider>
       <StyleMemoryProvider>
       <SavedOutfitsProvider>
       <Suspense fallback={<TabFallback />}>
@@ -166,6 +168,7 @@ export default function FashionGPT() {
       </Suspense>
       </SavedOutfitsProvider>
       </StyleMemoryProvider>
+      </StyleLearningProvider>
     </div>
   );
 }

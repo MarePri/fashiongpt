@@ -257,6 +257,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .outfit-reasoning-banner-text { flex: 1; }
 .outfit-reasoning-banner-text strong { font-size: 11px; font-weight: 600; display: block; margin-bottom: 2px; }
 .outfit-reasoning-banner-text p { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0; }
+.outfit-boost-banner {
+  background: rgba(255,215,0,0.06);
+  border-bottom: 1px solid rgba(255,215,0,0.15);
+}
+.outfit-boost-banner .outfit-reasoning-banner-text strong {
+  color: #d4a843;
+}
 
 /* ─── Confidence Breakdown — per-dimension with reasoning text ── */
 .outfit-confidence-row {
@@ -829,6 +836,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .skeleton-block { height: 120px; width: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--border) 25%, #333 50%, var(--border) 75%); background-size: 800px 100%; animation: shimmer 1.8s ease-in-out infinite; }
 .og-skeleton { padding: 20px 0; }
 .og-personalized-badge { display: inline-block; font-size: 9px; font-weight: 500; color: var(--accent); background: rgba(201,130,107,0.1); border: 1px solid rgba(201,130,107,0.25); border-radius: 10px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; letter-spacing: 0.2px; }
+.og-learning-badge { display: inline-block; font-size: 9px; font-weight: 500; color: #d4a843; background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); border-radius: 10px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.2px; cursor: help; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    OUTFIT GENERATOR

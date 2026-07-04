@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import useOutfitGenerator from '../hooks/useOutfitGenerator.js';
 import { useSavedOutfitsContext } from '../hooks/SavedOutfitsContext.jsx';
 import { useStyleMemoryContext } from '../hooks/StyleMemoryContext.jsx';
+import { useStyleLearningContext } from '../hooks/StyleLearningContext.jsx';
 import OutfitCard from './OutfitCard.jsx';
 import CriticScore from './CriticScore.jsx';
 import GeneratingAnimation from './GeneratingAnimation.jsx';
@@ -251,6 +252,7 @@ export default function OutfitGenerator({ memory }) {
   const generator = useOutfitGenerator();
   const saved = useSavedOutfitsContext();
   const styleMem = useStyleMemoryContext();
+  const styleLearn = useStyleLearningContext();
 
   const initialOccasion = memory?.data?.lastInputs?.occasion || null;
   const initialArchetype = memory?.data?.lastInputs?.archetype || null;
@@ -274,6 +276,8 @@ export default function OutfitGenerator({ memory }) {
   const [customizingIndex, setCustomizingIndex] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
   const [saveToast, setSaveToast] = useState(null);
+  // Track star ratings per look (independent of save — rates before saving)
+  const [lookRatings, setLookRatings] = useState({});
   const [genStage, setGenStage] = useState(-1);
   const [genProgress, setGenProgress] = useState(0);
   const genTimerRef = useRef(null);
@@ -577,9 +581,28 @@ export default function OutfitGenerator({ memory }) {
     }
   }, [selectedOccasion, selectedArchetype, budget, generator, styleMem]);
 
-  const handleRate = useCallback((id, rating) => {
-    saved.rateOutfit(id, rating);
-  }, [saved]);
+  const handleRate = useCallback((lookIndex, rating) => {
+    const look = looks[lookIndex];
+    if (!look) return;
+
+    // Track locally so the UI shows the star fill immediately
+    setLookRatings(prev => ({ ...prev, [lookIndex]: rating }));
+
+    // If this look has been saved, persist the rating in saved outfits too
+    const lookName = look.outfit?.name || '';
+    const savedEntry = saved.savedOutfits.find(o => o.name === lookName);
+    if (savedEntry) {
+      saved.rateOutfit(savedEntry.id, rating);
+    }
+
+    // Log rating to style learning for preference tracking
+    styleLearn.trackRating(
+      lookName,
+      lookName,
+      rating,
+      look.outfit?.items || []
+    );
+  }, [looks, saved, styleLearn]);
 
   // Feedback handler: records emotional reaction into style memory
   const handleFeedback = useCallback((lookIndex) => {
@@ -850,6 +873,8 @@ export default function OutfitGenerator({ memory }) {
   const activeLook = looks[activeVariation];
   const critique = activeLook?.critique;
   const activeScores = critique?.scores || {};
+  const activeBoost = styleLearn.getBoostMessage(activeLook?.outfit?.items || []);
+  const activeRating = lookRatings[activeVariation] || 0;
 
   return (
     <div className="section-pad outfit-gen">
@@ -865,6 +890,11 @@ export default function OutfitGenerator({ memory }) {
         <div className="section-title">
           Your 3 Looks
           {styleMem?.hasData && <span className="og-personalized-badge">✦ Personalized</span>}
+          {styleLearn.learntPrefs.isLearning && (
+            <span className="og-learning-badge" title={styleLearn.learntPrefs.profileSummary}>
+              🧠 Learning
+            </span>
+          )}
         </div>
         <div className="section-sub">
           {OCCASIONS.find(o => o.id === selectedOccasion)?.label || 'Styled for you'}
@@ -948,9 +978,12 @@ export default function OutfitGenerator({ memory }) {
               showActions
               showWhyThisWorks={true}
               onSave={() => handleSave(activeVariation)}
+              onRate={(r) => handleRate(activeVariation, r)}
+              rating={activeRating}
               onRegenerate={() => handleRegenerate(activeVariation)}
               isSaved={saved.isSaved(activeLook.outfit?.name || '')}
               onFeedback={handleFeedback(activeVariation)}
+              personalizationBoost={activeBoost}
             />
 
             {/* InteractiveOutfitBuilder: Customize this look */}

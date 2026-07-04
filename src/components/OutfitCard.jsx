@@ -24,6 +24,7 @@ function OutfitCard({
   scores,
   showWhyThisWorks,
   onFeedback,
+  personalizationBoost,
 }) {
   // Auto-expand when reasoning data exists — always show for portfolio reviewers
   const hasReasoning = !!(reasoning?.confidenceBreakdown?.length);
@@ -113,6 +114,17 @@ function OutfitCard({
           <div className="outfit-reasoning-banner-text">
             <strong>What this solves</strong>
             <p>{reasoning.solves}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── PERSONALIZATION BOOST — shown when style learning matches ── */}
+      {personalizationBoost && (
+        <div className="outfit-reasoning-banner outfit-boost-banner">
+          <span className="outfit-reasoning-banner-icon">✨</span>
+          <div className="outfit-reasoning-banner-text">
+            <strong>Personalization Boost</strong>
+            <p>{personalizationBoost}</p>
           </div>
         </div>
       )}
