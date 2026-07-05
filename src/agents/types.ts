@@ -186,6 +186,12 @@ export interface CriticAgentOutput {
   issues: string[];
   verdict: string;
   warnings: string[];
+  /** Where this critique came from: 'ai' (Claude) or 'rules' (deterministic) */
+  verdictSource: 'ai' | 'rules';
+  /** One-sentence natural-language critique for the verdictSource badge.
+   *  When source is 'ai', this is the actual model response sentence.
+   *  When source is 'rules', this falls back to the deterministic verdict text. */
+  naturalLanguageCritique: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

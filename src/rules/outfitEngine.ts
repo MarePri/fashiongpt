@@ -56,6 +56,8 @@ export interface EngineOutfitResult {
     suggestions: string[];
     issues: string[];
     verdict: string;
+    verdictSource: 'ai' | 'rules';
+    naturalLanguageCritique: string;
   };
   weatherContext: {
     temperature: number;
@@ -347,6 +349,8 @@ function generateSingleLook(
       suggestions,
       issues,
       verdict,
+      verdictSource: 'rules',
+      naturalLanguageCritique: verdict,
     },
     weatherContext,
     variationLabel: blueprint.variationLabel,

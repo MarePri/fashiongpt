@@ -8,6 +8,8 @@ import React from 'react';
  *     suggestions?: string[],
  *     issues?: string[],
  *     verdict?: string,
+ *     verdictSource?: 'ai' | 'rules',
+ *     naturalLanguageCritique?: string,
  *   },
  *   styleScore?: number,
  *   weatherContext?: { temperature?: number, description?: string, recommendation?: string } | null,
@@ -26,6 +28,12 @@ function CriticScore({ critique, styleScore, weatherContext, compact }) {
     { key: 'budgetCompliance', label: 'Budget Fit', value: critique.scores?.budgetCompliance ?? 0, color: '#F4A7A3' },
   ];
 
+  // ── Verdict source badge ──────────────────────────────────────────────
+  const isAI = critique.verdictSource === 'ai';
+  const sourceIcon = isAI ? '🤖' : '⚙️';
+  const sourceLabel = isAI ? 'AI Critique' : 'Rules';
+  const nlCritique = critique.naturalLanguageCritique || critique.verdict || '';
+
   if (compact) {
     // Compact view: just overall + top 3 scores in a row
     const top = scoreDefs.slice(0, 4);
@@ -43,13 +51,27 @@ function CriticScore({ critique, styleScore, weatherContext, compact }) {
 
   return (
     <div className="critic-breakdown">
-      {/* Main verdict */}
-      {critique.verdict && (
+      {/* Verdict source badge with natural-language critique */}
+      {nlCritique && (
         <div className="critic-verdict">
+          <span className={`critic-verdict-source ${isAI ? 'ai' : 'rules'}`}>
+            <span className="critic-source-icon">{sourceIcon}</span>
+            <span className="critic-source-label">{sourceLabel}</span>
+          </span>
+          <span className="critic-verdict-source-text">"{nlCritique}"</span>
+        </div>
+      )}
+
+      {/* Approval status + full verdict */}
+      {critique.verdict && (
+        <div className="critic-status-row">
           <span className={`critic-badge ${critique.scores?.overall >= 70 ? 'approved' : 'needs-work'}`}>
             {critique.scores?.overall >= 70 ? '✓ Approved' : '○ Refinements Suggested'}
           </span>
-          <span className="critic-verdict-text">{critique.verdict}</span>
+          {/* Only show full verdict text if it differs from the NL critique */}
+          {critique.verdict !== nlCritique && (
+            <span className="critic-verdict-text">{critique.verdict}</span>
+          )}
         </div>
       )}
 

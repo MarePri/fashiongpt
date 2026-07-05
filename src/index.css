@@ -1211,6 +1211,15 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
 .critic-badge.needs-work { color: var(--accent2); background: rgba(184,160,112,0.12); }
 .critic-verdict-text { font-size: 12px; color: var(--muted); line-height: 1.4; }
 
+/* ── Verdict source badge (AI vs Rules) ── */
+.critic-verdict-source { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.critic-verdict-source.ai { color: #C4A0F4; background: rgba(196,160,244,0.12); }
+.critic-verdict-source.rules { color: var(--muted); background: rgba(160,160,180,0.10); }
+.critic-source-icon { font-size: 13px; line-height: 1; }
+.critic-source-label { letter-spacing: 0.02em; }
+.critic-verdict-source-text { font-size: 12px; color: var(--text); line-height: 1.4; font-style: italic; }
+.critic-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
 .critic-weather { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 12px; padding: 8px 10px; background: var(--surface); border-radius: 8px; }
 .critic-weather-icon { font-size: 14px; }
 

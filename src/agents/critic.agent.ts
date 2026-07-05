@@ -1,5 +1,8 @@
 // ─── Critic Agent ──────────────────────────────────────────────────────────────
 // Reviews an outfit for style coherence, budget compliance, occasion fit.
+// Has two paths:
+//   1. AI-powered (Claude) — when online, generates natural-language critique
+//   2. Deterministic rules — fallback when offline or AI fails
 // Never calls other agents — returns critique to orchestrator.
 
 import type {
@@ -10,6 +13,8 @@ import type {
 } from './types';
 import * as logger from './logger';
 import { computeColorHarmony, getColorGroup, COLOR_GROUPS } from '../utils/colorHarmony';
+import { isOfflineMode } from '../services/config';
+import { critiqueWithAI } from '../services/aiCritic';
 
 const AGENT = 'CriticAgent';
 
@@ -40,18 +45,58 @@ function styleMatchesOccasion(
 // ─── Main Entry Point ─────────────────────────────────────────────────────────
 
 /**
- * Critique an outfit based on occasion, budget, and profile context.
+ * Critique an outfit using AI (Claude) when online, falling back to
+ * deterministic rule-based logic when offline or if the AI call fails.
  * Always returns a valid CriticAgentOutput — never throws.
  */
 export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAgentOutput> {
   const start = Date.now();
-  const warnings: string[] = [];
 
   logger.info(AGENT, 'Critiquing outfit', {
     items: input.outfit.items.length,
     occasion: input.context.occasion,
     budget: input.context.budget,
   });
+
+  // ── Path A: AI-powered critique (when online) ──────────────────────────
+  if (!isOfflineMode()) {
+    try {
+      const aiResult = await critiqueWithAI(input.outfit, input.context);
+      if (aiResult) {
+        const duration = Date.now() - start;
+        logger.info(AGENT, 'AI critique complete', {
+          approved: aiResult.approved,
+          overall: aiResult.scores.overall,
+          duration,
+        });
+        return {
+          approved: aiResult.approved,
+          scores: aiResult.scores,
+          suggestions: aiResult.suggestions,
+          issues: aiResult.issues,
+          verdict: aiResult.verdict,
+          warnings: [],
+          verdictSource: 'ai',
+          naturalLanguageCritique: aiResult.naturalLanguageCritique || aiResult.verdict,
+        };
+      }
+    } catch (err) {
+      logger.warn(AGENT, 'AI critique failed, falling back to deterministic', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // ── Path B: Deterministic rule-based critique (offline / fallback) ────
+  return deterministicCritique(input, start);
+}
+
+/**
+ * Deterministic rule-based critique — the original scoring logic.
+ * Extracted into its own function so the AI path can fall back cleanly.
+ */
+async function deterministicCritique(input: CriticAgentInput, start: number): Promise<CriticAgentOutput> {
+  const warnings: string[] = [];
 
   try {
     const items = input.outfit.items;
@@ -62,12 +107,7 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
 
     // ═══ 1. Occasion Fit ═══
     // Check if items have styles that match the archetype/occasion
-    const tags = profile.styleTags;
-    const fitScores = items.map(i => {
-      // We only have the item info; match by brand affinity if possible
-      // For items without style tags, approximate via brand matching
-      return 0.7; // Neutral baseline since item might not have style arrays
-    });
+    const fitScores = items.map(() => 0.7); // Neutral baseline
     const occasionFit = clamp(Math.round(fitScores.reduce((s, v) => s + v, 0) / fitScores.length * 100));
 
     if (occasionFit < 50) {
@@ -78,10 +118,9 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
     // ═══ 2. Budget Compliance ═══
     let budgetCompliance: number;
     if (input.context.budget === null || input.context.budget === undefined) {
-      budgetCompliance = 100; // No budget constraint—always compliant
+      budgetCompliance = 100;
     } else if (totalCost <= input.context.budget) {
       budgetCompliance = clamp(100 - Math.round((totalCost / input.context.budget - 0.5) * 40));
-      // Higher score if well under budget (50-60% is sweet spot)
     } else {
       budgetCompliance = clamp(
         Math.round((1 - (totalCost - input.context.budget) / input.context.budget) * 100)
@@ -91,19 +130,17 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
     }
 
     // ═══ 3. Style Coherence ═══
-    // Check brand mixing — is there a coherent brand strategy?
     const brands = [...new Set(items.map(i => i.brand).filter(Boolean))];
     let styleCoherence = 75;
     if (brands.length === 1) {
-      styleCoherence = 85; // Single brand = high coherence
+      styleCoherence = 85;
     } else if (brands.length <= 3) {
-      styleCoherence = 75; // Reasonable mix
+      styleCoherence = 75;
     } else {
-      styleCoherence = 60; // Too many brands — might lack cohesion
+      styleCoherence = 60;
       suggestions.push('Consider reducing brand variety for a more cohesive look');
     }
 
-    // Adjust by profile alignment
     const profileBrands = profile.brandAffinities.map(b => b.brand);
     const alignedBrands = brands.filter(b => profileBrands.includes(b));
     if (alignedBrands.length === 0 && brands.length > 0) {
@@ -121,8 +158,6 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
     }
 
     // ═══ 5. Trend Alignment ═══
-    // Check if brands are trending or items have high trend scores
-    // Use brand trend data from the trends
     let trendAlignment = 70;
     try {
       const { TRENDS } = await import('../data/trends');
@@ -145,33 +180,25 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
     }
 
     // ═══ 6. Overall Score ═══
-    const overall = clamp(
-      Math.round((
-        occasionFit * 0.25 +
-        budgetCompliance * 0.20 +
-        styleCoherence * 0.20 +
-        colorScore * 0.20 +
-        trendAlignment * 0.15
-      )),
-      0,
-      100
-    );
+    const overall = clamp(Math.round(
+      occasionFit * 0.25 +
+      budgetCompliance * 0.20 +
+      styleCoherence * 0.20 +
+      colorScore * 0.20 +
+      trendAlignment * 0.15
+    ));
 
     // ═══ 7. Verdict ═══
     const approved = overall >= 60 && issues.length <= 1;
     let verdict: string;
     if (approved) {
-      if (overall >= 85) {
-        verdict = 'Excellent outfit — well styled, on-budget, and occasion-appropriate.';
-      } else {
-        verdict = 'Solid outfit — minor tweaks recommended for optimization.';
-      }
+      verdict = overall >= 85
+        ? 'Excellent outfit — well styled, on-budget, and occasion-appropriate.'
+        : 'Solid outfit — minor tweaks recommended for optimization.';
     } else {
-      if (overall < 40) {
-        verdict = 'Needs significant rework — revisit the core pieces and budget.';
-      } else {
-        verdict = 'Has potential but requires adjustments before finalizing.';
-      }
+      verdict = overall < 40
+        ? 'Needs significant rework — revisit the core pieces and budget.'
+        : 'Has potential but requires adjustments before finalizing.';
     }
 
     const scores: CriticScores = {
@@ -183,16 +210,27 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
       overall,
     };
 
+    const naturalLanguageCritique = verdict;
+
     if (issues.length > 0) {
       logger.warn(AGENT, 'Issues found', { issues, overall });
     } else {
-      logger.info(AGENT, 'Critique complete', { approved, overall, duration: Date.now() - start });
+      logger.info(AGENT, 'Deterministic critique complete', { approved, overall, duration: Date.now() - start });
     }
 
-    return { approved, scores, suggestions, issues, verdict, warnings };
+    return {
+      approved,
+      scores,
+      suggestions,
+      issues,
+      verdict,
+      warnings,
+      verdictSource: 'rules',
+      naturalLanguageCritique,
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    logger.error(AGENT, 'Critique failed', { error: msg });
+    logger.error(AGENT, 'Deterministic critique failed', { error: msg });
     warnings.push(`Critique error: ${msg}`);
     return {
       approved: false,
@@ -201,6 +239,8 @@ export async function critiqueOutfit(input: CriticAgentInput): Promise<CriticAge
       issues: [`Analysis error: ${msg}`],
       verdict: 'Critique could not be completed due to an internal error.',
       warnings,
+      verdictSource: 'rules',
+      naturalLanguageCritique: 'Critique could not be completed due to an internal error.',
     };
   }
 }

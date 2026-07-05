@@ -72,6 +72,8 @@ export interface OutfitGeneratorResult {
     suggestions: string[];
     issues: string[];
     verdict: string;
+    verdictSource: 'ai' | 'rules';
+    naturalLanguageCritique: string;
   };
   /** Weather context used */
   weatherContext: WeatherData | null;
@@ -264,6 +266,8 @@ export async function generateOutfit(input: OutfitGeneratorInput): Promise<Outfi
           suggestions: ['Try again later or check your connection'],
           issues: [fallbackMsg],
           verdict: 'Both AI and rule-based generation failed.',
+          verdictSource: 'rules',
+          naturalLanguageCritique: 'Both AI and rule-based generation failed.',
         },
         weatherContext,
         approved: false,
@@ -312,6 +316,8 @@ export async function generateOutfit(input: OutfitGeneratorInput): Promise<Outfi
     suggestions?: string[];
     issues?: string[];
     verdict?: string;
+    verdictSource?: 'ai' | 'rules';
+    naturalLanguageCritique?: string;
   } | undefined;
 
   const criticScores = critique?.scores || {};
@@ -359,6 +365,8 @@ export async function generateOutfit(input: OutfitGeneratorInput): Promise<Outfi
       suggestions: allSuggestions,
       issues: critique?.issues || [],
       verdict: critique?.verdict || 'No critique available.',
+      verdictSource: critique?.verdictSource || 'rules',
+      naturalLanguageCritique: critique?.naturalLanguageCritique || critique?.verdict || 'No critique available.',
     },
     weatherContext,
     approved,
