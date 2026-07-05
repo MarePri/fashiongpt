@@ -33,6 +33,10 @@ export interface OutfitGeneratorInput {
   };
   /** Preferred product categories (e.g. ["Bags", "Outerwear"]) */
   preferredCategories?: string[];
+  /** Learned color preferences from style learning (3+ ratings) */
+  likedColors?: string[];
+  /** Learned category preferences from style learning (3+ ratings) */
+  likedCategories?: string[];
   /** User ID if saving to database */
   userId?: string;
 }
@@ -176,6 +180,8 @@ export async function generateOutfit(input: OutfitGeneratorInput): Promise<Outfi
         budget: input.budget ?? null,
         styleGoal: input.styleGoal,
         preferredCategories: input.preferredCategories,
+        likedColors: input.likedColors,
+        likedCategories: input.likedCategories,
         preferences: {
           occasion: input.occasion,
           budget: input.budget,
@@ -203,6 +209,8 @@ export async function generateOutfit(input: OutfitGeneratorInput): Promise<Outfi
           : null,
         styleGoal: input.styleGoal,
         preferredCategories: input.preferredCategories,
+        likedColors: input.likedColors,
+        likedCategories: input.likedCategories,
       });
 
       // Pick the variation matching styleGoal, or default to first outfit

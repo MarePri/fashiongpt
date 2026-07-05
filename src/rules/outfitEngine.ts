@@ -26,6 +26,10 @@ export interface EngineInput {
   } | null;
   styleGoal?: string | null;
   preferredCategories?: string[];
+  /** Learned color preferences from style learning (3+ ratings required) */
+  likedColors?: string[];
+  /** Learned category preferences from style learning (3+ ratings required) */
+  likedCategories?: string[];
 }
 
 export interface EngineOutput {
@@ -217,7 +221,9 @@ function generateSingleLook(
   styleProfile: StyleProfile,
   budget: number | null,
   weatherInfluence: WeatherInfluence | null,
-  index: number
+  index: number,
+  likedColors?: string[],
+  likedCategories?: string[]
 ): EngineOutfitResult {
   const pool = getProductPool();
 
@@ -302,17 +308,35 @@ function generateSingleLook(
   // 6. Compute outfit name and reasoning
   const outfitName = getOutfitName(occasionRule.id, blueprint.styleCategory);
   const why = buildWhy(items, occasionRule, blueprint);
-  const reasoning = buildReasoning(items, occasionRule, styleProfile, weatherInfluence, budget);
+  const reasoning = buildReasoning(items, occasionRule, styleProfile, weatherInfluence, budget, boostMessages);
   const whyDetailed = buildWhyDetailed(items, occasionRule, weatherInfluence);
 
   // 7. Score the outfit
   const scores = computeAllScores(items, occasionRule, styleProfile, weatherInfluence, budget, totalCost);
-  const overall = Math.round(
+  const baseOverall = Math.round(
     (scores.occasionFit + scores.budgetCompliance + scores.styleCoherence + scores.colorHarmony + scores.trendAlignment) / 5
   );
 
+  // ── Preference Alignment Boost (Style Learning) ──────────────────────────
+  const prefAlign = computePreferenceAlignment(items, likedColors, likedCategories);
+  let overall = baseOverall;
+  let boostMessages: string[] = [];
+  if (prefAlign.score > 0) {
+    // Boost overall by up to +8% based on how well items match liked prefs
+    const boostFactor = (prefAlign.score / 100) * 0.08;
+    overall = Math.min(100, Math.round(baseOverall * (1 + boostFactor)));
+    // Build human-readable boost messages for suggestions/reasoning
+    boostMessages = prefAlign.matches.map(
+      (m) => `🎯 Preference Boost: ${m}`
+    );
+  }
+
   // 8. Generate suggestions and verdict
   const suggestions = buildSuggestions(items, scores, weatherInfluence);
+  // Prepend preference boost messages to suggestions
+  if (boostMessages.length > 0) {
+    suggestions.unshift(...boostMessages);
+  }
   const issues = buildIssues(items, scores, budget, totalCost);
   const verdict = buildVerdict(scores, overall);
 
@@ -357,6 +381,65 @@ function generateSingleLook(
     styleCategory: blueprint.styleCategory,
     itemExplanations,
   };
+}
+
+// ─── Preference Alignment (Style Learning Boost) ────────────────────────────
+
+/**
+ * Compute how well the outfit items match the user's learned preferences.
+ * Returns a score 0-100 and a list of match descriptions for reasoning/suggestions.
+ * Only activates when likedColors or likedCategories has entries (isLearning == true).
+ */
+export function computePreferenceAlignment(
+  items: Product[],
+  likedColors: string[] | undefined,
+  likedCategories: string[] | undefined
+): { score: number; matches: string[] } {
+  const matches: string[] = [];
+
+  if (!likedColors?.length && !likedCategories?.length) {
+    return { score: 0, matches: [] };
+  }
+
+  // Normalise liked colours for comparison
+  const normColors = (likedColors || []).map(c => c.toLowerCase());
+  const normCats = (likedCategories || []).map(c => c.toLowerCase());
+
+  let matchCount = 0;
+  let totalChecks = 0;
+
+  for (const item of items) {
+    // Check colour match
+    if (normColors.length > 0 && item.color) {
+      totalChecks++;
+      const itemColor = item.color.toLowerCase();
+      const matchedColor = normColors.find(c => itemColor.includes(c));
+      if (matchedColor) {
+        matchCount++;
+        if (!matches.some(m => m.includes(matchedColor))) {
+          matches.push(`${item.color} (matches your liked colors)`);
+        }
+      }
+    }
+
+    // Check category match
+    if (normCats.length > 0 && item.cat) {
+      totalChecks++;
+      const itemCat = item.cat.toLowerCase();
+      const matchedCat = normCats.find(c => itemCat.includes(c));
+      if (matchedCat) {
+        matchCount++;
+        if (!matches.some(m => m.includes(matchedCat))) {
+          matches.push(`${item.cat} (matches your liked categories)`);
+        }
+      }
+    }
+  }
+
+  if (totalChecks === 0) return { score: 0, matches };
+
+  const score = Math.round((matchCount / totalChecks) * 100);
+  return { score, matches };
 }
 
 // ─── Scoring ─────────────────────────────────────────────────────────────────
@@ -488,7 +571,8 @@ function buildReasoning(
   occasionRule: OccasionRule,
   styleProfile: StyleProfile,
   weatherInfluence: WeatherInfluence | null,
-  budget: number | null
+  budget: number | null,
+  boostMessages?: string[]
 ): string {
   const parts: string[] = [];
   const total = items.reduce((s, i) => s + (i.price || 0), 0);
@@ -502,6 +586,10 @@ function buildReasoning(
   const coherence = computeStyleCoherence(items, styleProfile);
   const harmony = computeColorScore(items);
   parts.push(`Style coherence: ${coherence}/100. ${harmony.explanation}`);
+
+  if (boostMessages?.length) {
+    parts.push(boostMessages.join('. '));
+  }
 
   return parts.join(' ');
 }
@@ -597,12 +685,14 @@ function generateThreeLooks(
   occasionRule: OccasionRule,
   styleProfile: StyleProfile,
   budget: number | null,
-  weatherInfluence: WeatherInfluence | null
+  weatherInfluence: WeatherInfluence | null,
+  likedColors?: string[],
+  likedCategories?: string[]
 ): EngineOutfitResult[] {
   const blueprints = buildLookBlueprints(occasionRule, styleProfile, weatherInfluence);
 
   return blueprints.map((bp, i) =>
-    generateSingleLook(bp, occasionRule, styleProfile, budget, weatherInfluence, i)
+    generateSingleLook(bp, occasionRule, styleProfile, budget, weatherInfluence, i, likedColors, likedCategories)
   );
 }
 
@@ -625,7 +715,9 @@ export function generateOutfits(input: EngineInput): EngineOutput {
     occasionRule,
     styleProfile,
     input.budget ?? null,
-    weatherInfluence
+    weatherInfluence,
+    input.likedColors,
+    input.likedCategories
   );
 
   return {

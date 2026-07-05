@@ -420,6 +420,8 @@ export default function OutfitGenerator({ memory }) {
             styleGoal: variationGoal,
             preferredCategories: memPrefs.preferredCategories,
             weather: weatherData ? { city: 'Madrid' } : undefined,
+            likedColors: styleLearn.learntPrefs.isLearning ? styleLearn.learntPrefs.likedColors : undefined,
+            likedCategories: styleLearn.learntPrefs.isLearning ? styleLearn.learntPrefs.likedCategories : undefined,
           })
           .then((result) =>
             result
@@ -487,7 +489,7 @@ export default function OutfitGenerator({ memory }) {
       resultsWithReasoning
     );
     styleMem?.recordGeneration(selectedOccasion, selectedArchetype);
-  }, [selectedOccasion, selectedArchetype, budget, generator, memory, styleMem, saved, weatherData]);
+  }, [selectedOccasion, selectedArchetype, budget, generator, memory, styleMem, styleLearn, saved, weatherData]);
 
   const handleModifyLook = useCallback((index, modifiedLook) => {
     setLooks(prev => {
@@ -518,6 +520,8 @@ export default function OutfitGenerator({ memory }) {
         budget: budgetNum,
         archetypeId: styleVariations[index]?.id || undefined,
         styleGoal: `${styleVariations[index]?.label || 'Versatile'} look`,
+        likedColors: styleLearn.learntPrefs.isLearning ? styleLearn.learntPrefs.likedColors : undefined,
+        likedCategories: styleLearn.learntPrefs.isLearning ? styleLearn.learntPrefs.likedCategories : undefined,
       });
       if (result) {
         setLooks(prev => {
@@ -534,7 +538,7 @@ export default function OutfitGenerator({ memory }) {
     } catch (err) {
       console.warn(`[OutfitGenerator] Regeneration ${index + 1} failed:`, err);
     }
-  }, [selectedOccasion, selectedArchetype, budget, generator, looks, styleMem]);
+  }, [selectedOccasion, selectedArchetype, budget, generator, looks, styleMem, styleLearn]);
 
   const handleRefine = useCallback(async (index, feedback) => {
     if (!feedback.trim() || !selectedOccasion) return;
@@ -561,6 +565,8 @@ export default function OutfitGenerator({ memory }) {
         archetypeId: styleVariations[index]?.id || undefined,
         styleGoal: fullGoal,
         preferredCategories: memPrefs.preferredCategories,
+        likedColors: styleLearn.learntPrefs.isLearning ? styleLearn.learntPrefs.likedColors : undefined,
+        likedCategories: styleLearn.learntPrefs.isLearning ? styleLearn.learntPrefs.likedCategories : undefined,
       });
       if (result) {
         setLooks(prev => {
@@ -579,7 +585,7 @@ export default function OutfitGenerator({ memory }) {
     } finally {
       setRefiningIndex(null);
     }
-  }, [selectedOccasion, selectedArchetype, budget, generator, styleMem]);
+  }, [selectedOccasion, selectedArchetype, budget, generator, styleMem, styleLearn]);
 
   const handleRate = useCallback((lookIndex, rating) => {
     const look = looks[lookIndex];

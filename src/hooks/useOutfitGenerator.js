@@ -35,6 +35,8 @@ export default function useOutfitGenerator() {
    *   styleGoal?: string,
    *   weather?: { city?: string, lat?: number, lon?: number },
    *   preferredCategories?: string[],
+   *   likedColors?: string[],
+   *   likedCategories?: string[],
    * }} input
    */
   const generate = useCallback(async (input) => {
@@ -60,6 +62,8 @@ export default function useOutfitGenerator() {
         styleGoal: input.styleGoal,
         weather: input.weather,
         preferredCategories: input.preferredCategories,
+        likedColors: input.likedColors,
+        likedCategories: input.likedCategories,
       });
       if (controller.signal.aborted || !mountedRef.current) return null;
       setResult(output);

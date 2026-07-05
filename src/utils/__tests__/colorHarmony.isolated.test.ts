@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 
 // Import target file (will fail initially — Red phase)
 import { COLOR_GROUPS, getColorGroup, computeColorHarmony } from '../colorHarmony.js';
+import { computePreferenceAlignment } from '../../rules/outfitEngine.ts';
 
 describe('colorHarmony - Isolated Tests', () => {
   // ─── COLOR_GROUPS ─────────────────────────────────────────────────────────
@@ -133,5 +134,49 @@ describe('colorHarmony - Isolated Tests', () => {
       ]);
       expect(score).toBe(95);
     });
+  });
+});
+
+// ─── Preference Alignment (Style Learning Boost) ─────────────────────────
+
+describe('computePreferenceAlignment', () => {
+  it('should score higher when outfit items match likedColors', () => {
+    const items = [
+      { color: 'Navy', cat: 'Tops', brand: 'Zara', name: 'Top', price: 50, trend: 70, style: [], id: 1, fit: 'regular', img: '' },
+    ] as any;
+
+    // Without likedColors → score 0
+    const withoutPref = computePreferenceAlignment(items, [], []);
+    expect(withoutPref.score).toBe(0);
+    expect(withoutPref.matches).toEqual([]);
+
+    // With Navy as liked → items contain Navy → score > 0
+    const withNavy = computePreferenceAlignment(items, ['Navy'], []);
+    expect(withNavy.score).toBeGreaterThan(0);
+    expect(withNavy.matches.length).toBeGreaterThanOrEqual(1);
+    expect(withNavy.matches[0].toLowerCase()).toContain('navy');
+  });
+
+  it('should return 0 when no likedColors or likedCategories provided', () => {
+    const items = [
+      { color: 'Black', cat: 'Shoes', brand: 'Nike', name: 'Shoe', price: 100, trend: 80, style: [], id: 2, fit: 'regular', img: '' },
+    ] as any;
+
+    const result = computePreferenceAlignment(items, undefined, undefined);
+    expect(result.score).toBe(0);
+    expect(result.matches).toEqual([]);
+  });
+
+  it('should match likedCategories and produce correct boost indication', () => {
+    const items = [
+      { color: 'Black', cat: 'Shoes', brand: 'Nike', name: 'Sneakers', price: 100, trend: 80, style: [], id: 3, fit: 'regular', img: '' },
+      { color: 'White', cat: 'Tops', brand: 'Adidas', name: 'Tee', price: 40, trend: 70, style: [], id: 4, fit: 'regular', img: '' },
+    ] as any;
+
+    // Liked category "Shoes" — 1 of 2 items matches → score 50
+    const result = computePreferenceAlignment(items, [], ['Shoes']);
+    expect(result.score).toBeGreaterThan(0);
+    // Should mention Shoes in the match description
+    expect(result.matches.some(m => m.toLowerCase().includes('shoe'))).toBe(true);
   });
 });
