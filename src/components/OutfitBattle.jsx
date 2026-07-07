@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 /**
  * OutfitBattle — Side-by-side comparison of all 3 looks with pick-a-winner.
@@ -12,6 +12,12 @@ import React, { useState, useMemo } from 'react';
 const OutfitBattle = React.memo(function OutfitBattle({ looks, styleCategories, onPickWinner, onRegenerate }) {
   const [winnerIndex, setWinnerIndex] = useState(null);
   const [showDimensionCompare, setShowDimensionCompare] = useState(false);
+  const [battleNonce, setBattleNonce] = useState(0);
+
+  // Bump nonce when looks change so cards remount and replay their reveal animation
+  useEffect(() => {
+    setBattleNonce(n => n + 1);
+  }, [looks]);
 
   // Compute best-in-class for each dimension
   const bestScores = useMemo(() => {
@@ -109,8 +115,9 @@ const OutfitBattle = React.memo(function OutfitBattle({ looks, styleCategories, 
           const isWinner = winnerIndex === i;
           return (
             <div
-              key={i}
+              key={`bc-${battleNonce}-${i}`}
               className={`battle-card${isWinner ? ' winner' : ''}${winnerIndex !== null && !isWinner ? ' faded' : ''}`}
+              style={{ animationDelay: `${i * 80}ms` }}
             >
               <div className="battle-card-header">
                 <span className="battle-card-label">{look.variationLabel || `Look ${i + 1}`}</span>

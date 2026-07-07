@@ -1,4 +1,5 @@
 import React from 'react';
+import { productImg } from '../data/products.js';
 
 /**
  * CapsuleWardrobe — 10-piece capsule builder.
@@ -40,7 +41,7 @@ function CapsuleWardrobe({ capsuleResult, capsuleLoading, buildCapsule, onReset 
           <div className="capsule-grid">
             {capsuleResult.picks.map((p, i) => (
               <div className="capsule-item" key={i}>
-                <img className="capsule-item-icon" src={p.img} alt={p.name} />
+                <img className="capsule-item-icon" src={productImg(p)} alt={p.name} />
                 <div className="capsule-item-name">
                   {p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name}
                 </div>

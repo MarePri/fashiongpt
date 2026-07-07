@@ -976,7 +976,7 @@ export default function OutfitGenerator({ memory }) {
       ) : (
         /* Single look view */
         activeLook && (
-          <div className="og-active-look">
+          <div className="og-active-look" key={activeVariation}>
             <OutfitCard
               outfit={activeLook.outfit}
               scores={activeScores}

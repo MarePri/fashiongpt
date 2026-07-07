@@ -4476,3 +4476,79 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-ser
     font-size: 11px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOTION PHASE — consistent animation system
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Shared motion tokens */
+:root {
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 1. Card reveal — fade + slide up */
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.battle-card {
+  animation: cardReveal 400ms var(--motion-ease) both;
+}
+
+/* Faded cards (losers after winner picked) — smooth opacity */
+.battle-card.faded {
+  transition: opacity 300ms var(--motion-ease);
+}
+
+/* Tab switch remount — rely on existing .og-active-look fadeIn */
+
+/* 2. Star rating — scale pop when star becomes active */
+@keyframes starPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.rating-star.active {
+  animation: starPop 400ms var(--motion-ease);
+}
+
+/* 3. Winner celebration — gentle pulse */
+@keyframes winnerReveal {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.battle-card.winner {
+  animation: winnerReveal 500ms var(--motion-ease);
+}
+
+/* Winner banner — slide in from top */
+@keyframes bannerSlide {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.battle-winner-banner {
+  animation: bannerSlide 400ms var(--motion-ease);
+}
+
+/* 4. Badge — scale + glow on mount */
+@keyframes badgePop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.og-personalized-badge,
+.sm-panel-badge {
+  animation: badgePop 500ms var(--motion-ease);
+}
+
+/* Save toast already has toastSlideIn — keep as-is */
+
+/* 5. Idle animation — subtle float on weather icon */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.weather-widget .weather-icon {
+  animation: gentleFloat 4s ease-in-out infinite;
+}

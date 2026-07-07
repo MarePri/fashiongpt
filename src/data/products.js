@@ -3,13 +3,45 @@
  */
 
 /**
- * Unsplash source URLs with fashion keywords — reliable for demo/portfolio.
- * Format: https://source.unsplash.com/{width}x{height}/?{keyword}
- * When loaded in a browser these return real fashion photography.
- * The `sig` param avoids caching so distinct products get distinct images.
+ * Stub — the actual display image is computed at render time via productImg().
  */
-const IMG = (kw, sig) =>
-  `https://source.unsplash.com/200x200/?${kw}&sig=${sig}`;
+const IMG = () => undefined;
+
+/**
+ * Clean SVG silhouette icons for each product category.
+ * Each icon is a simple path rendered on a dark rounded square.
+ * SVG data URIs render reliably in <img> tags (unlike emoji in <text>).
+ */
+const CATEGORY_ICON = {
+  'Tops': '<path d="M30 24 L18 42 L34 46 L34 78 L66 78 L66 46 L82 42 L70 24 L54 32 L50 26 L46 32 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'Bottoms': '<path d="M26 22 L20 78 L36 78 L40 52 L50 52 L50 78 L64 78 L68 52 L80 78 L74 22 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'Dresses': '<path d="M34 22 L18 58 L28 80 L50 68 L72 80 L82 58 L66 22 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'Shoes': '<path d="M16 62 Q20 54 30 54 L62 54 Q74 54 80 62 L90 64 Q94 66 94 74 L94 80 L12 80 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 54 L30 44 Q34 40 42 40 L56 40 Q66 40 72 48 L80 62" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>',
+  'Bags': '<path d="M30 36 L36 20 L64 20 L70 36 L86 42 L86 78 L14 78 L14 42 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 36 L60 36" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>',
+  'Outerwear': '<path d="M28 24 L16 44 L34 48 L38 62 L50 56 L62 62 L66 48 L84 44 L72 24 L56 30 L50 22 L44 30 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'Accessories': '<circle cx="50" cy="50" r="26" fill="none" stroke="#fff" stroke-width="4.5"/><circle cx="50" cy="50" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="50" cy="50" r="4" fill="#fff"/>',
+  'Sport': '<circle cx="50" cy="22" r="9" fill="none" stroke="#fff" stroke-width="4"/><path d="M50 30 L40 48 L44 76 L52 76 L56 62 L58 72 L68 72 L72 62 L62 56 L58 46 L58 30" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'Loungewear': '<path d="M28 26 L16 52 L22 76 L38 76 L44 56 L56 56 L62 76 L78 76 L84 52 L72 26 L56 34 L50 28 L44 34 Z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+
+/**
+ * Generate an SVG data URI with the category icon.
+ * Example output: data:image/svg+xml,... (a t-shirt icon for Tops)
+ */
+function iconSVG(category) {
+  const icon = CATEGORY_ICON[category] || CATEGORY_ICON['Tops'];
+  return `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="18" fill="#1C1C1C"/>${icon}</svg>`
+  )}`;
+}
+
+/**
+ * Get the display image for a product — called at render time so it works
+ * reliably regardless of bundling or caching.
+ */
+export function productImg(p) {
+  return iconSVG(p.cat);
+}
 
 /** @type {import('../types/index.js').Product[]} */
 export const PRODUCTS = [

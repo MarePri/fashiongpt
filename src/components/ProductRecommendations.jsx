@@ -1,4 +1,5 @@
 import React from 'react';
+import { productImg } from '../data/products.js';
 
 /**
  * Color name → hex mapper for product color swatches.
@@ -39,7 +40,7 @@ function ProductRecommendations({ items }) {
 
         return (
           <div className="outfit-item" key={item.id || i}>
-            <img className="outfit-item-icon" src={item.img} alt={item.name} />
+            <img className="outfit-item-icon" src={productImg(item)} alt={item.name} />
             <div className="outfit-item-info">
               <div className="outfit-item-name-row">
                 {itemColor && (
