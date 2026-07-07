@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ARCHETYPES } from '../data/archetypes.js';
-import { PRODUCTS } from '../data/products.js';
+import { PRODUCTS, productImg } from '../data/products.js';
 
 /**
  *  Build curated outfits from product data by matching style tags to archetypes.
@@ -139,7 +139,7 @@ export default function Discovery({ onTryLook }) {
                     <div className="disc-items">
                       {outfit.items.map((item) => (
                         <div key={item.id} className="disc-item">
-                          <img className="disc-item-img" src={item.img} alt={item.name} />
+                          <img className="disc-item-img" src={productImg(item)} alt={item.name} />
                           <span className="disc-item-name">{item.name}</span>
                           <span className="disc-item-brand">{item.brand}</span>
                           <span className="disc-item-price">€{item.price.toFixed(2)}</span>
