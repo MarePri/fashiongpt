@@ -696,6 +696,34 @@ function generateThreeLooks(
   );
 }
 
+// ─── Preference Alignment ─────────────────────────────────────────────────────
+
+/**
+ * Compute preference alignment score for a set of items against liked colors/categories.
+ * Returns a score (0-100) and the list of matching items.
+ */
+export function computePreferenceAlignment(
+  items: Product[],
+  likedColors?: string[],
+  likedCategories?: string[]
+): { score: number; matches: Product[] } {
+  const colors = likedColors ?? [];
+  const categories = likedCategories ?? [];
+
+  if (colors.length === 0 && categories.length === 0) {
+    return { score: 0, matches: [] };
+  }
+
+  const matches = items.filter(item =>
+    colors.some(c => item.color.toLowerCase().includes(c.toLowerCase())) ||
+    categories.some(c => item.cat.toLowerCase() === c.toLowerCase())
+  );
+
+  const score = items.length > 0 ? Math.round((matches.length / items.length) * 100) : 0;
+
+  return { score, matches };
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
