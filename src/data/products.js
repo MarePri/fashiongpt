@@ -3,13 +3,37 @@
  */
 
 /**
- * Unsplash source URLs with fashion keywords — reliable for demo/portfolio.
- * Format: https://source.unsplash.com/{width}x{height}/?{keyword}
- * When loaded in a browser these return real fashion photography.
- * The `sig` param avoids caching so distinct products get distinct images.
+ * Product images are generated from the product's category as emoji placeholders.
+ * The IMG function is a stub — the actual img is set in the post-processing step
+ * after the PRODUCTS array, using emojiPlaceholder(product.cat).
+ * This gives fitting, zero-network, always-visible icons for every product family.
  */
-const IMG = (kw, sig) =>
-  `https://source.unsplash.com/200x200/?${kw}&sig=${sig}`;
+const IMG = () => undefined;
+
+/**
+ * Category → emoji mapping for image fallback placeholders.
+ */
+export const CATEGORY_EMOJI = {
+  'Tops': '👕',
+  'Bottoms': '👖',
+  'Dresses': '👗',
+  'Shoes': '👟',
+  'Bags': '👜',
+  'Outerwear': '🧥',
+  'Accessories': '💍',
+  'Sport': '🏃',
+  'Loungewear': '🛋️',
+};
+
+/**
+ * Generate a placehold.co URL with the category name as text.
+ * Always visible, zero-network (reliable CDN), and clearly matches the product family.
+ * Example: https://placehold.co/200x200/1C1C1C/FFFFFF?text=Dresses
+ */
+export function emojiPlaceholder(category) {
+  const text = encodeURIComponent(category || 'Product');
+  return `https://placehold.co/200x200/1C1C1C/FFFFFF?text=${text}`;
+}
 
 /** @type {import('../types/index.js').Product[]} */
 export const PRODUCTS = [
@@ -61,3 +85,6 @@ export const PRODUCTS = [
   { id: 35, brand: "Oysho",     name: "Linen Beach Dress",          cat: "Dresses",    color: "White",      price: 45.00,  trend: 90, style: ["beach","vacation","casual"],                                 fit: "flowy",    img: IMG("beach-dress,linen",35) },
   { id: 36, brand: "Oysho",     name: "Seamless Leggings",          cat: "Sport",      color: "Slate",      price: 39.00,  trend: 86, style: ["sport","gym","casual"],                                         fit: "fitted",   img: IMG("leggings,seamless",36) },
 ];
+
+// Post-process: fill img from category so every product gets a fitting emoji
+PRODUCTS.forEach(p => { p.img = emojiPlaceholder(p.cat); });
